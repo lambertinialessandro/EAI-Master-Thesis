@@ -116,7 +116,7 @@ def convertDataset():
 
                 x_imgs = np.empty((train_N, img_size[1], img_size[0], 3), dtype=np.ubyte)
                 readImgsToList(x_imgs, train_N, imgsSeq, x_files)
-                pm.printD("Saving on file: "dirSeq+imgsSeqName+"_loaded")
+                pm.printD("Saving on file: "+dirSeq+imgsSeqName+"_loaded")
                 np.save(dirSeq+imgsSeqName+'_loaded', x_imgs, allow_pickle=False)
                 pm.imshowI(x_imgs[0], "example")
 
