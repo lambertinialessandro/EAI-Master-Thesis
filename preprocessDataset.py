@@ -5,44 +5,17 @@ Created on Wed Jan 12 15:17:53 2022
 @author: lambe
 """
 
-
 import os
 import numpy as np
 from enum import Enum
-
-import tensorflow as tf
-from tensorflow import keras
-from keras.layers import Conv2D, Dense, BatchNormalization
-
 import cv2
-import matplotlib.pyplot as plt
-from IPython.display import HTML, display
 
-from utility import PrintManager
+from params import FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, \
+        dir_main, dir_Dataset, dir_Model, dir_History, path_sequences, path_poses,\
+        img_size
+from utility import PrintManager, bcolors
 
-FLAG_DOWNLOAD_DATASET = False #@param {type:"boolean"}
-FLAG_DEBUG_PRINT = True #@param {type:"boolean"}
-FLAG_INFO_PRINT = True #@param {type:"boolean"}
 pm = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT)
-
-
-# global variables to save the tables/models
-dir_main = 'C:/Users/lambe/OneDrive/Desktop/Dataset/'
-#dir_main = 'E:/Università/Magistrale La Sapienza/2 Primo semestre/[EAI] AI for '+\
-    #'VP in HCI & HRI/[EAI-VPH]/' #@param {type:"string"}
-
-dir_Dataset = 'dataset/'#@param {type:"string"}
-dir_Model = 'Model/'#@param {type:"string"}
-dir_History = 'History/'#@param {type:"string"}
-
-dir_Dataset = dir_main + dir_Dataset
-dir_Model = dir_main + dir_Model
-dir_History = dir_main + dir_History
-dirs = [dir_main, dir_Dataset, dir_Model, dir_History]
-
-img_size = (640, 174) # (1280,384) # (640, 174) = 111.360
-path_dataset = dir_Dataset+'sequences/'
-
 
 class EnumPreproc(Enum):
     UNCHANGED = "0"
@@ -78,7 +51,6 @@ class EnumPreproc(Enum):
 typePreprocessing = EnumPreproc.UNCHANGED
 processImg = typePreprocessing.genFun()
 
-
 def checkExistDirs(dirs):
     for dir in dirs:
       if not os.path.exists(dir):
@@ -90,41 +62,75 @@ def checkExistDirs(dirs):
 def readImgsToList(imgs, N, path, files):
     pos = 0
     for f in files:
-        pm.printProgressBar(pos, N)
-        imgs[pos,:,:, :] = processImg(path+f, img_size)
+        pm.printProgressBarI(pos, N)
+        imgs[pos, :, :, :] = processImg(path+f, img_size)
         pos += 1
-    pm.printProgressBar(N, N)
+    pm.printProgressBarI(N, N)
+
+def readPosesFromFile(poses, N, path):
+    with open(path, 'r') as f:
+        for pos in range(N):
+            pm.printProgressBarI(pos, N)
+            poses[pos, :] = f.readline().split(' ')
+        pm.printProgressBarI(N, N)
 
 def convertDataset():
-    for dirSeqName in os.listdir(path_dataset):
-        dirSeq = path_dataset+dirSeqName+"/"
+    for dirSeqName in os.listdir(path_sequences):
+        dirSeq = path_sequences+dirSeqName+"/"
         if not os.path.isdir(dirSeq):
             continue
 
+        pm.printI(bcolors.OKYELLOW+"Converting: "+dirSeqName+bcolors.ENDC)
         for imgsSeqName in os.listdir(dirSeq):
             imgsSeq = dirSeq+imgsSeqName+"/"
             if not os.path.isdir(imgsSeq):
                 continue
 
+            x_files = sorted(os.listdir(imgsSeq))
+            imgs_N = len(x_files)
+
             if os.path.isfile(dirSeq+imgsSeqName+'_loaded.npy'):
                 pm.printD("Already converted ["+dirSeqName+"/"+imgsSeqName+"]!!")
-                continue
             else:
-                pm.printD("Slow --> ["+dirSeqName+"/"+imgsSeqName+"]")
-                x_files = sorted(os.listdir(imgsSeq))
-                train_N = len(x_files)
+                pm.printD("Converting --> ["+dirSeqName+"/"+imgsSeqName+"]")
 
-                x_imgs = np.empty((train_N, img_size[1], img_size[0], 3), dtype=np.ubyte)
-                readImgsToList(x_imgs, train_N, imgsSeq, x_files)
+                x_imgs = np.empty((imgs_N, img_size[1], img_size[0], 3), dtype=np.ubyte)
+                readImgsToList(x_imgs, imgs_N, imgsSeq, x_files)
                 pm.printD("Saving on file: "+dirSeq+imgsSeqName+"_loaded")
                 np.save(dirSeq+imgsSeqName+'_loaded', x_imgs, allow_pickle=False)
                 pm.imshowI(x_imgs[0], "example")
 
+            pm.printI(bcolors.OKGREEN+"Done: "+dirSeq+imgsSeqName+"_loaded"+bcolors.ENDC)
+
+        if os.path.isfile(dirSeq+'pose_loaded.npy'):
+            pm.printD("Already converted [poses/"+dirSeqName+".txt]!!")
+            pm.printI(bcolors.OKGREEN+"Done: "+dirSeq+"pose_loaded"+bcolors.ENDC)
+        else:
+            pm.printD("Converting --> [poses/"+dirSeqName+".txt]")
+
+            y_test = np.empty((imgs_N, 12), dtype=np.float16)
+            fileName = path_poses+dirSeqName+'.txt'
+            if os.path.isfile(path_poses+dirSeqName+'.txt'):
+                readPosesFromFile(y_test, imgs_N, fileName)
+
+                pm.printD("Saving on file: "+dirSeq+"pose_loaded")
+                np.save(dirSeq+"pose_loaded", y_test, allow_pickle=False)
+
+                pm.printI(bcolors.OKGREEN+"Done: "+dirSeq+"pose_loaded"+bcolors.ENDC)
+            else:
+                pm.printD(bcolors.WARNING+fileName+" does not exists!!"+bcolors.ENDC)
+
+
 
 def main():
+    pm.printI(bcolors.OKYELLOW+"Checking directories"+bcolors.ENDC+" ###\n")
+    dirs = [dir_main, dir_Dataset, path_sequences, dir_Model, dir_History]
     checkExistDirs(dirs)
+    pm.printI("Directories checked!\n")
 
+    pm.printI(bcolors.OKYELLOW+"Converting dataset"+bcolors.ENDC+" ###")
     convertDataset()
+    pm.printI("Done dataset convertion!\n")
 
 if __name__ == "__main__":
     main()
