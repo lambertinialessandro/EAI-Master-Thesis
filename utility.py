@@ -24,7 +24,7 @@ class PrintManager:
         plt.imshow(img)
 
     # Print iterations progress
-    def printProgressBarI (self, iteration, total, length = 50):
+    def printProgressBarI (self, iteration, total, length = 40):
         if self.FLAG_INFO_PRINT:
             percent = ("{0:." + str(2) + "f}").format(100 * (iteration / float(total)))
             filledLength = int(length * iteration // total)
@@ -45,11 +45,17 @@ class PrintManager:
         plt.imshow(img)
 
 class bcolors:
-    OKBLUE = '\x1b[1;30;44m'
-    OKYELLOW = '\x1b[1;33;40m'
-    OKGREEN = '\x1b[1;32;40m'
+    LIGHTRED = '\x1b[1;31;10m'
+    LIGHTGREEN = '\x1b[1;32;10m'
+    LIGHTYELLOW = '\x1b[1;33;10m'
+    
+    DARKBLUE = '\x1b[1;30;44m'
+    DARKYELLOW = '\x1b[1;33;40m'
+    DARKGREEN = '\x1b[1;32;40m'
+    
     WARNING = '\x1b[0;30;41m'
     FAIL = '\x1b[0;30;43m'
+    
     ENDC = '\x1b[0m'
 
 # Testing
