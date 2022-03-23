@@ -50,8 +50,7 @@ def getImage(path):
   img = cv2.resize(img, (params.WIDTH, params.HEIGHT), interpolation=cv2.INTER_LINEAR)
   return img
 
-def loadImages(path):
-  suffix = "_{}_{}_loaded.npy".format(params.WIDTH, params.HEIGHT)
+def loadImages(path, suffix):
   if os.path.isfile(path + suffix):
     imagesSet = np.load(path + suffix, allow_pickle=False)
     print(imagesSet.shape)
@@ -68,7 +67,7 @@ def loadImages(path):
         imagesSet.append(img)
       else:
         notFirstIter = True
-      
+
       img1 = img2
   imagesSet = np.reshape(imagesSet, (-1, params.CHANNELS, params.WIDTH, params.HEIGHT))
   return imagesSet
@@ -98,7 +97,7 @@ def matrix2pose(mat):
   R = np.array([[mat[0], mat[1], mat[2]],
                 [mat[4], mat[5], mat[6]],
                 [mat[8], mat[9], mat[10]]])
-  
+
   angles = rotationMatrixToEulerAngles(R)
   pose = np.concatenate((p, angles))
   return pose
@@ -123,18 +122,25 @@ def loadPoses(path):
           posesSet.append(pose)
         else:
           notFirstIter = True
-      
+
         pose1 = pose2
       posesSet = np.array(posesSet)
   return posesSet
 
-def DataLoader(datapath, attach = True, sequence='00'):
+def DataLoader(datapath, attach=True, suffixType=1, sequence='00'):
   imgPath = os.path.join(datapath, 'sequences', sequence, 'image_2')
   posesPath = os.path.join(datapath, 'poses', sequence)
-  
+
+  if suffixType==1:
+      suffix = "_{}_{}_loaded.npy".format(params.WIDTH, params.HEIGHT)
+  elif suffixType==2:
+      suffix = "_{}_{}_Quat_loaded.npy".format(params.WIDTH, params.HEIGHT)
+  else:
+      raise ValueError
+
   if attach:
-    imagesSet = [torch.FloatTensor(loadImages(imgPath))]
-    posesSet = [torch.FloatTensor(loadPoses(posesPath))]
+    imagesSet = [torch.FloatTensor(loadImages(imgPath, suffix)).to(params.DEVICE)] #[0:100]
+    posesSet = [torch.FloatTensor(loadPoses(posesPath)).to(params.DEVICE)] #[0:100]
 
     print("Details of X :")
     print(imagesSet[0].size())
@@ -149,13 +155,13 @@ def DataLoader(datapath, attach = True, sequence='00'):
     print("Details of y :")
     print(posesSet.size())
   else:
-    imagesSet = loadImages(imgPath)
+    imagesSet = loadImages(imgPath, suffix)
     posesSet = loadPoses(posesPath)
-    
+
   return imagesSet, posesSet
 
 def main():
-    pm.printI(bcolors.OKYELLOW+"Loading Data"+bcolors.ENDC+" ###")
+    pm.printI(bcolors.DARKYELLOW+"Loading Data"+bcolors.ENDC+" ###")
     sequences = os.listdir(params.path_sequences)[0:2] # [0:11]
     num_seq = len(sequences)
     perc_train = 0.7
@@ -168,11 +174,11 @@ def main():
     pm.printI("Num seq Test: {} ({}%)".format(num_test, round((1-perc_train)*100)))
     pm.printI("Test sequences: {}\n".format(test_seq))
 
-    pm.printI(bcolors.OKGREEN+"Loading Train data"+bcolors.ENDC+" ###")
+    pm.printI(bcolors.DARKGREEN+"Loading Train data"+bcolors.ENDC+" ###")
     #x_train, y_train = loadData(train_seq)
     pm.printI("Loading Train data done!\n")
 
-    pm.printI(bcolors.OKGREEN+"Loading Test data"+bcolors.ENDC+" ###")
+    pm.printI(bcolors.DARKGREEN+"Loading Test data"+bcolors.ENDC+" ###")
     #x_test, y_test = loadData(test_seq)
     pm.printI("Loading Test data done!\n")
 
