@@ -12,8 +12,7 @@ from DeepVONet import DeepVONet
 from QuaternionDeepVONet import QuaternionDeepVONet
 
 import params
-from utility import PrintManager, bcolors
-pm = PrintManager(params.FLAG_DEBUG_PRINT, params.FLAG_INFO_PRINT)
+from utility import PM, bcolors
 
 def build(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Adam"):
     if typeModel == "DeepVONet":
@@ -35,10 +34,10 @@ def build(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Adam"):
     else:
         raise ValueError
 
-    print(bcolors.LIGHTRED+"Building model:"+bcolors.ENDC)
-    print(bcolors.LIGHTYELLOW+"model: {}".format(typeModel)+bcolors.ENDC)
-    print(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
-    print(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
+    PM.printI(bcolors.LIGHTRED+"Building model:"+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"model: {}".format(typeModel)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
     return model, criterion, optimizer
 
 def main():
