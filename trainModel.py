@@ -20,15 +20,21 @@ from loadData import DataGeneretor
 from buildModel import buildModel
 
 import params
-from utility import PrintManager, bcolors
-
-pm = PrintManager(params.FLAG_DEBUG_PRINT, params.FLAG_INFO_PRINT)
+from EnumPreproc import EnumPreproc
+from utility import PM, bcolors
 
 model, criterion, optimizer = buildModel.build(typeModel=params.typeModel,
                                                typeCriterion=params.typeCriterion,
                                                typeOptimizer=params.typeOptimizer)
 
-#fileName = params.dir_Model+"DeepVO_epoch4.pt"
+imageDir = "image_2"
+prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
+
+suffixFileNameLoad = "[1-10]"
+suffixFileNameLosses = "[1-10]"
+suffixFileNameSave = "[1-10]"
+
+#fileName = "{}DeepVO_epoch{}.pt".format(params.dir_Model, suffixFileNameLoad)
 #model.load_state_dict(torch.load(fileName))
 #print(print("\x1b[1;31;10mLoaded {}\x1b[0m\n".format(fileName)))
 

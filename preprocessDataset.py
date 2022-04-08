@@ -18,86 +18,12 @@ import os
 import math
 import time
 import numpy as np
-from enum import Enum
 
-import cv2
-from PIL import Image
-from scipy.ndimage import grey_dilation, grey_erosion
-from skimage.morphology import disk
-from skimage.filters.rank import entropy
+from EnumPreproc import EnumPreproc
+from params import dir_main, dir_Dataset, dir_Model, dir_History, path_sequences,\
+    path_poses, WIDTH, HEIGHT
+from utility import PM, bcolors
 
-from params import FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, \
-        dir_main, dir_Dataset, dir_Model, dir_History, path_sequences, path_poses,\
-        img_size
-from utility import PrintManager, bcolors
-
-pm = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT)
-
-WIDTH = img_size[0] # img_size[0], 1280
-HEIGHT = img_size[1] # img_size[1], 384
-CHANNELS = 3
-
-class EnumPreproc(Enum):
-    UNCHANGED = "0"
-    CROPPING = "1"
-
-    QUAD_CANNY_ENTOPY_DILATED = "100"
-
-    def genFun(self):
-        if self == EnumPreproc.UNCHANGED:
-            def f(imgPath, imgSize):
-                im = cv2.imread(imgPath, cv2.IMREAD_UNCHANGED)
-                im = cv2.resize(im, imgSize, interpolation = cv2.INTER_AREA);
-                return im
-            return f
-        elif self == EnumPreproc.CROPPING:
-            def f(imgPath, imgSize):
-                im = cv2.imread(imgPath, cv2.IMREAD_UNCHANGED)
-                w, h, _ = im.shape
-                w2 = round(w/2)
-
-                top = h-imgSize(1)
-                bottom = h
-
-                is_w2 = round(imgSize/2)
-                left = w2-is_w2
-                if imgSize%2 == 0:
-                    right = w2+is_w2
-                else:
-                    right = w2+is_w2+1
-
-                im = im[top:bottom, left:right];
-                return im
-            return f
-        elif self == EnumPreproc.QUAD_CANNY_ENTOPY_DILATED:
-            def f(imgPath, imgSize):
-                imRGB = cv2.imread(imgPath, cv2.IMREAD_UNCHANGED)
-                imRGB = cv2.resize(imRGB, (1241, 376), interpolation = cv2.INTER_AREA);
-                imGray = cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY)
-
-                canny_img = cv2.Canny(np.array(imRGB), 100, 200)
-                canny_img = Image.fromarray(canny_img)
-
-                scaled_entropy = canny_img / np.max(canny_img)
-                entropy_image = entropy(scaled_entropy, disk(2))
-                scaled_entropy = entropy_image / entropy_image.max()
-                mask = scaled_entropy > 0.75
-                maskedImg = imGray * mask
-
-                dilated = grey_dilation(maskedImg, footprint=np.ones((3,3)))
-                dilated = grey_erosion(dilated, size=(3,3))
-                dilated = np.array(Image.fromarray(dilated))
-
-                im_CED = np.reshape(dilated, (376, 1241, 1))
-                quatImg = np.concatenate((im_CED, imRGB), 2)
-                quatImg = cv2.resize(quatImg, imgSize, interpolation = cv2.INTER_AREA);
-                return quatImg
-            return f
-
-typePreprocessing = EnumPreproc.UNCHANGED
-processImg = typePreprocessing.genFun()
-typePreprocessingQuat = EnumPreproc.QUAD_CANNY_ENTOPY_DILATED
-processImgQuat = typePreprocessingQuat.genFun()
 
 def checkExistDirs(dirs):
     for dir in dirs:

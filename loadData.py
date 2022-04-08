@@ -14,63 +14,8 @@ import cv2
 import torch
 
 import params
-from utility import PrintManager, bcolors
-
-pm = PrintManager(params.FLAG_DEBUG_PRINT, params.FLAG_INFO_PRINT)
-
-
-def splitSequences(sequences, num_train):
-    x_train_seq = []
-    x_test_seq = sequences.copy()
-
-    for i in range(num_train):
-        pos = random.randint(0, len(x_test_seq)-1)
-        x_train_seq.append(x_test_seq.pop(pos))
-    x_train_seq.sort()
-
-    return x_train_seq, x_test_seq
-
-def loadData(seq):
-    N = len(seq)
-    x = []
-    y = []
-
-    for pos in range(N):
-        pm.printProgressBarI(pos, N)
-        curSeq = seq[pos]+"/"
-        imgsFileName = "image_2"
-        x.append(np.load(params.path_sequences+curSeq+imgsFileName+"_loaded.npy", allow_pickle=False))
-        y.append(np.load(params.path_sequences+curSeq+"pose_loaded.npy", allow_pickle=False))
-    pm.printProgressBarI(N, N)
-
-    return x, y
-
-def getImage(path):
-  img = cv2.imread(path)
-  img = cv2.resize(img, (params.WIDTH, params.HEIGHT), interpolation=cv2.INTER_LINEAR)
-  return img
-
-def loadImages(path, suffix):
-  if os.path.isfile(path + suffix):
-    imagesSet = np.load(path + suffix, allow_pickle=False)
-    print(imagesSet.shape)
-  else:
-    notFirstIter = False
-    img1 = []
-    img2 = []
-    imagesSet = []
-    for img in glob.glob(path+'/*'):
-      img2 = getImage(img)
-
-      if notFirstIter:
-        img = np.concatenate([img1, img2], axis=-1)
-        imagesSet.append(img)
-      else:
-        notFirstIter = True
-
-      img1 = img2
-  imagesSet = np.reshape(imagesSet, (-1, params.CHANNELS, params.WIDTH, params.HEIGHT))
-  return imagesSet
+from EnumPreproc import EnumPreproc
+from utility import PM, bcolors
 
 def isRotationMatrix(R):
   RT = np.transpose(R)
