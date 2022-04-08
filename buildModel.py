@@ -14,7 +14,8 @@ from QuaternionDeepVONet import QuaternionDeepVONet
 import params
 from utility import PM, bcolors
 
-def build(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Adam"):
+def buildModel(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Adam"):
+
     if typeModel == "DeepVONet":
         model = DeepVONet(sizeHidden=params.BACH_SIZE).to(params.DEVICE)
     elif typeModel == "QuaternionDeepVONet":
@@ -45,7 +46,12 @@ def main():
     typeCriterion = "MSELoss"
     typeOptimizer = "Adam" # "Adam", "SGD"
 
-    build(typeModel=typeModel, typeCriterion=typeCriterion, typeOptimizer=typeOptimizer)
+    DeepVONet, criterion, optimizer = buildModel(typeModel=typeModel,
+                                            typeCriterion=typeCriterion,
+                                            typeOptimizer=typeOptimizer)
+
+    # for parameter in DeepVONet.parameters():
+    #     print(parameter.size())
 
 
 if __name__ == "__main__":

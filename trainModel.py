@@ -11,11 +11,13 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 import gc
 import time
 import random
+
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from loadData import DataLoader
-import buildModel
+from loadData import DataGeneretor
+from buildModel import buildModel
 
 import params
 from utility import PrintManager, bcolors
