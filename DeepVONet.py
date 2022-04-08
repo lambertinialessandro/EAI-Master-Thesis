@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
+from params import DIM_LSTM
+
 class C_Block(nn.Module):
   def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
     super(C_Block, self).__init__()
@@ -48,15 +50,19 @@ class DeepVONet(nn.Module):
         self.block6 = C_Block (512, 1024, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
 
-        self.dimLSTMCell1 = 1024*5*2
-        self.lstm1 = nn.LSTMCell(self.dimLSTMCell1, 1000)
-        self.lstm1_dropout = nn.Dropout(0.5)
-        self.lstm2 = nn.LSTMCell(1000, 1000)
-        self.lstm2_dropout = nn.Dropout(0.5)
+        self.dimLSTMCell1 = DIM_LSTM
 
-        self.fc = nn.Linear(in_features=1000, out_features=6)
+        self.lstm = nn.LSTM(input_size=self.dimLSTMCell1, hidden_size=1000, num_layers=2,
+                            dropout=0.5)
+        self.lstm_dropout = nn.Dropout(0.5)
+        # self.lstm1 = nn.LSTMCell(self.dimLSTMCell1, 1000)
+        # self.lstm1_dropout = nn.Dropout(0.5)
+        # self.lstm2 = nn.LSTMCell(1000, 1000)
+        # self.lstm2_dropout = nn.Dropout(0.5)
 
-        self.reset_hidden_states(sizeHidden=sizeHidden, zero=True)
+        self.linear_output = nn.Linear(in_features=1000, out_features=6)
+
+        # self.reset_hidden_states(sizeHidden=sizeHidden, zero=True)
 
     def reset_hidden_states(self, sizeHidden=1, zero=True):
         if zero == True:
@@ -87,16 +93,19 @@ class DeepVONet(nn.Module):
         x = self.block5_1(x)
         x = self.block6(x)
 
-        #print(x.size())
-        x = x.view(x.size(0), self.dimLSTMCell1)
-        #print(x.size())
-        self.hx1, self.cx1 = self.lstm1(x, (self.hx1, self.cx1))
-        x = self.lstm1_dropout(self.hx1)
+        # #print(x.size())
+        # x = x.view(x.size(0), self.dimLSTMCell1)
+        # #print(x.size())
+        # self.hx1, self.cx1 = self.lstm1(x, (self.hx1, self.cx1))
+        # x = self.lstm1_dropout(self.hx1)
 
-        self.hx2, self.cx2 = self.lstm2(x, (self.hx2, self.cx2))
-        x = self.lstm2_dropout(self.hx2)
+        # self.hx2, self.cx2 = self.lstm2(x, (self.hx2, self.cx2))
+        # x = self.lstm2_dropout(self.hx2)
 
-        x = self.fc(x)
+        x = self.lstm(x)
+        x = self.lstm_dropout(x)
+
+        x = self.linear_output(x)
         return x
 
 
