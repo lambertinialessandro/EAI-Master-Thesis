@@ -10,6 +10,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import quaternionFunctions as QF
+from params import DIM_LSTM
 
 class QuatC_Block(nn.Module):
   def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
@@ -50,7 +51,7 @@ class QuaternionDeepVONet(nn.Module):
         self.block6 = QuatC_Block (512, 1024, kernel_size=(3, 3), stride=(2, 2),
                                    padding=(1, 1), dropout_rate=0.2)
 
-        self.dimLSTMCell1 = 1024*5*2
+        self.dimLSTMCell1 = DIM_LSTM
         self.lstm1 = nn.LSTMCell(self.dimLSTMCell1, 1000)
         self.lstm1_dropout = nn.Dropout(0.5)
         self.lstm2 = nn.LSTMCell(1000, 1000)
