@@ -29,28 +29,34 @@ def checkExistDirs(dirs):
     for dir in dirs:
       if not os.path.exists(dir):
         os.makedirs(dir)
-        pm.printD(dir + " --> CREATED")
+        PM.printD(dir + " --> CREATED")
       else:
-        pm.printD(dir + " --> ALREADY EXIST")
+        PM.printD(dir + " --> ALREADY EXIST")
 
-def readImgsToList(imagesSet, N, path, files, processImgF, imgSize):
+def readImgsToList(path, files, N, typePreproc):
     pos = 0
     img1 = []
     img2 = []
+    imagesSet = []
+    h1, w1, c1 = 0, 0, 0
 
     for f in files:
-        pm.printProgressBarI(pos, N)
-        img2 = processImgF(path+f, img_size)
+        PM.printProgressBarI(pos, N)
+        img2 = typePreproc.processImage(path+f)
 
         if pos > 0:
+            h1, w1, c1 = img1.shape
+            h2, w2, c2 = img1.shape
+            assert h1 == h2 and w1 == w2 and c1 == c2
+
             img = np.concatenate([img1, img2], axis=-1)
             imagesSet.append(img)
 
         img1 = img2
         pos += 1
 
-    pm.printProgressBarI(N, N)
-    imagesSet = np.reshape(imagesSet, (-1, )+imgSize)
+    PM.printProgressBarI(N, N)
+    return np.reshape(imagesSet, (-1, w1, h1, c1*2))
 
 def isRotationMatrix(R):
     RT = np.transpose(R)
@@ -88,7 +94,7 @@ def readPosesFromFile(posesSet, N, path):
 
     with open(path, 'r') as f:
         for pos in range(N):
-            pm.printProgressBarI(pos, N)
+            PM.printProgressBarI(pos, N)
             posef = np.fromstring(f.readline(), dtype=float, sep=' ')
             pose2 = poseFile2poseRobot(posef)
 
@@ -97,18 +103,17 @@ def readPosesFromFile(posesSet, N, path):
                 posesSet.append(pose)
 
             pose1 = pose2
-        pm.printProgressBarI(N, N)
+        PM.printProgressBarI(N, N)
 
-def convertDataset():
-    suffix = "_"+str(WIDTH)+"_"+str(HEIGHT)+"_loaded.npy"
-    suffixQuat = "_"+str(WIDTH)+"_"+str(HEIGHT)+"_Quat_loaded.npy"
-    for dirSeqName in os.listdir(path_sequences):
+def convertDataset(listTypePreproc):
+    for dirSeqName in ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']:
+        #os.listdir(path_sequences):
         dirSeq = path_sequences+dirSeqName+"/"
         if not os.path.isdir(dirSeq):
             continue
 
-        pm.printI(bcolors.DARKYELLOW+"Converting: "+dirSeqName+bcolors.ENDC)
-        for imgsSeqName in ['image_2']:#os.listdir(dirSeq):
+        PM.printI(bcolors.DARKYELLOW+"Converting: "+dirSeqName+bcolors.ENDC, head="\n")
+        for imgsSeqName in os.listdir(dirSeq): # ['image_2']
             imgsSeq = dirSeq+imgsSeqName+"/"
             if not os.path.isdir(imgsSeq):
                 continue
@@ -116,44 +121,30 @@ def convertDataset():
             x_files = sorted(os.listdir(imgsSeq))
             imgs_N = len(x_files)
 
-            if os.path.isfile(dirSeq+imgsSeqName+suffix):
-                pm.printD("Already converted ["+dirSeqName+"/"+imgsSeqName+"]!!")
-            else:
-                pm.printD("Converting --> ["+dirSeqName+"/"+imgsSeqName+"]")
-                initT = time.time()
+            for typePreproc in listTypePreproc:
+                suffix = "_{}_{}_{}_loaded.npy".format(typePreproc.name, WIDTH, HEIGHT)
 
-                imagesSet = []
-                readImgsToList(imagesSet, imgs_N, imgsSeq, x_files, processImg,
-                               (CHANNELS, WIDTH, HEIGHT))
-                pm.printD("Saving on file: "+dirSeq+imgsSeqName+suffix)
-                np.save(dirSeq+imgsSeqName+suffix, imagesSet, allow_pickle=False)
-                elapsedT = time.time() - initT
-                pm.printD("Time needed: %.2fs for %d images"%(elapsedT, imgs_N))
+                if os.path.isfile(dirSeq+imgsSeqName+suffix):
+                    PM.printD("Already converted ["+dirSeq+imgsSeqName+suffix+"]!!")
+                else:
+                    PM.printD("Converting --> ["+dirSeq+imgsSeqName+suffix+"]")
+                    initT = time.time()
 
-            pm.printI(bcolors.DARKGREEN+"Done: "+dirSeq+imgsSeqName+suffix+bcolors.ENDC)
+                    imagesSet = readImgsToList(imgsSeq, x_files, imgs_N, typePreproc)
+                    PM.printD("Saving on file: "+dirSeq+imgsSeqName+suffix)
+                    np.save(dirSeq+imgsSeqName+suffix, imagesSet, allow_pickle=False)
+                    elapsedT = time.time() - initT
+                    PM.printD("Time needed: %.2fs for %d images"%(elapsedT, imgs_N))
 
-            if os.path.isfile(dirSeq+imgsSeqName+suffixQuat):
-                pm.printD("Already converted ["+dirSeqName+"/"+imgsSeqName+"_Quat]!!")
-            else:
-                pm.printD("Converting --> ["+dirSeqName+"/"+imgsSeqName+"_Quat]")
-                initT = time.time()
+                PM.printI(bcolors.DARKGREEN+"Done: "+dirSeq+imgsSeqName+suffix+bcolors.ENDC)
 
-                imagesSet = []
-                readImgsToList(imagesSet, imgs_N, imgsSeq, x_files, processImgQuat,
-                               (CHANNELS+2, WIDTH, HEIGHT))
-                pm.printD("Saving on file: "+dirSeq+imgsSeqName+suffixQuat)
-                np.save(dirSeq+imgsSeqName+suffixQuat, imagesSet, allow_pickle=False)
-                elapsedT = time.time() - initT
-                pm.printD("Time needed: %.2fs for %d images"%(elapsedT, imgs_N))
-
-            pm.printI(bcolors.DARKGREEN+"Done: "+dirSeq+imgsSeqName+suffixQuat+bcolors.ENDC)
 
         poseFileName = path_poses+dirSeqName+"_pose_loaded.npy"
         if os.path.isfile(poseFileName):
-            pm.printD("Already converted [poses/"+dirSeqName+".txt]!!")
-            pm.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
+            PM.printD("Already converted [poses/"+dirSeqName+".txt]!!")
+            PM.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
         else:
-            pm.printD("Converting --> [poses/"+dirSeqName+".txt]")
+            PM.printD("Converting --> [poses/"+dirSeqName+".txt]")
             initT = time.time()
 
             posesSet = []
@@ -161,26 +152,29 @@ def convertDataset():
             if os.path.isfile(path_poses+dirSeqName+'.txt'):
                 readPosesFromFile(posesSet, imgs_N, fileName)
 
-                pm.printD("Saving on file: "+poseFileName)
+                PM.printD("Saving on file: "+poseFileName)
                 np.save(poseFileName, posesSet, allow_pickle=False)
                 elapsedT = time.time() - initT
-                pm.printD("Time needed: %.2fs for %d poses"%(elapsedT, imgs_N))
+                PM.printD("Time needed: %.2fs for %d poses"%(elapsedT, imgs_N))
 
-                pm.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
+                PM.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
             else:
-                pm.printD(bcolors.WARNING+fileName+" does not exists!!"+bcolors.ENDC)
+                PM.printD(bcolors.WARNING+fileName+" does not exists!!"+bcolors.ENDC)
 
 
 
 def main():
-    pm.printI(bcolors.DARKYELLOW+"Checking directories"+bcolors.ENDC+" ###\n")
+    PM.printI(bcolors.DARKYELLOW+"Checking directories"+bcolors.ENDC+" ###\n")
     dirs = [dir_main, dir_Dataset, path_sequences, dir_Model, dir_History]
     checkExistDirs(dirs)
-    pm.printI("Directories checked!\n")
+    PM.printI("Directories checked!")
 
-    pm.printI(bcolors.DARKYELLOW+"Converting dataset"+bcolors.ENDC+" ###")
-    convertDataset()
-    pm.printI("Done dataset convertion!\n")
+    # listTypePreproc = EnumPreproc.listAllPreproc((WIDTH, HEIGHT))
+    listTypePreproc = [EnumPreproc.UNCHANGED((WIDTH, HEIGHT)),
+                       EnumPreproc.QUAD_PURE((WIDTH, HEIGHT))]
+    PM.printI(bcolors.DARKYELLOW+"Converting dataset"+bcolors.ENDC+" ###", head="\n")
+    convertDataset(listTypePreproc)
+    PM.printI("Done dataset convertion!")
 
 if __name__ == "__main__":
     main()
