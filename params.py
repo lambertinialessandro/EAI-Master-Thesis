@@ -5,13 +5,13 @@ Created on Tue Mar  8 14:29:52 2022
 @author: lambe
 """
 
+#@title  { run: "auto", vertical-output: true, form-width: "50%", display-mode: "both" }
+#@markdown # Global Variables:
+
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import torch
-
-#@title  { run: "auto", vertical-output: true, form-width: "50%", display-mode: "both" }
-#@markdown # Global Variables:
 
 #@markdown ---
 #@markdown ### Flags:
@@ -54,7 +54,7 @@ else:
     raise ValueError
 
 BACH_SIZE = 10 #@param {type:"number"}
-NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
+NUM_BACH = 1 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
 #@param[96, 192, 384] {type:"raw", allow-input: false}
@@ -80,7 +80,7 @@ NUM_POSES = 6
 
 img_size = (320, 96) # (1280,384) # (640, 192) # (320, 96)
 
-trainingSeries = ["00", "02", "08", "09"]
+trainingSeries = ["00", "01", "02", "08", "09"] # added 01
 testingSeries = ["03", "04", "05", "06", "07", "10"]
 
 
