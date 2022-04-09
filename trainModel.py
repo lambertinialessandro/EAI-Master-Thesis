@@ -23,7 +23,7 @@ import params
 from EnumPreproc import EnumPreproc
 from utility import PM, bcolors
 
-model, criterion, optimizer = buildModel.build(typeModel=params.typeModel,
+model, criterion, optimizer = buildModel(typeModel=params.typeModel,
                                                typeCriterion=params.typeCriterion,
                                                typeOptimizer=params.typeOptimizer)
 
@@ -41,15 +41,14 @@ suffixFileNameSave = "[1-10]"
 BASE_EPOCH = 1 # 1 starting epoch
 NUM_EPOCHS = 10 # 10 how many epoch
 
-loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
-loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
-
 for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
+  loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+  loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
+
   print(bcolors.LIGHTRED+"EPOCH {}/{}\n".format(epoch, BASE_EPOCH+NUM_EPOCHS-1)+bcolors.ENDC)
   print(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
   model.train()
   model.training = True
-  app_loss_train = []
 
   train_initT = time.time()
   for sequence in params.trainingSeries:
@@ -57,48 +56,56 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
     # X, y = DataLoader(params.dir_Dataset, attach=False, suffixType=params.suffixType, sequence=sequence)
 
     dg = DataGeneretor(sequence, imageDir, prepreocF, attach=True)
-    train_numOfBatch = dg.numImgs-9
+    train_numOfBatch = dg.numImgs
 
     for inputs, labels, pos in dg:
-      PM.printProgressBarI(pos, train_numOfBatch)
-      torch.cuda.empty_cache()
+        PM.printProgressBarI(pos, train_numOfBatch)
+        for i in range(params.NUM_BACH):
+          torch.cuda.empty_cache()
 
-      model.zero_grad()
-      # model.reset_hidden_states(sizeHidden=params.BACH_SIZE, zero=True)
+          model.zero_grad()
+          # model.reset_hidden_states(sizeHidden=params.BACH_SIZE, zero=True)
 
-      outputs = model(inputs)
+          outputs = model(inputs[i])
 
-      totLoss = criterion(outputs, labels[0])
-      poseLoss = criterion(outputs, labels[0]).item()
-      rotLoss = criterion(outputs, labels[0]).item()
+          totLoss = criterion(outputs, labels[i])
+          poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+          rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
 
-      totLoss.backward()
-      optimizer.step()
+          totLoss.backward()
+          optimizer.step()
 
-      loss_train[sequence]["tot"].append(totLoss.item())
-      loss_train[sequence]["pose"].append(poseLoss)
-      loss_train[sequence]["rot"].append(rotLoss)
-    del dg, inputs, labels
+          loss_train[sequence]["tot"].append(totLoss.item())
+          loss_train[sequence]["pose"].append(poseLoss)
+          loss_train[sequence]["rot"].append(rotLoss)
+        del inputs, labels, outputs, totLoss, poseLoss, rotLoss
+        gc.collect()
+        torch.cuda.empty_cache()
+    del dg
     gc.collect()
     torch.cuda.empty_cache()
 
-    PM.printProgressBarI(train_numOfBatch, train_numOfBatch)
-    print("current loss: {}\n\n".format(
-        sum(loss_train[sequence]["tot"])/len(loss_train[sequence]["tot"])))
+    PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+        np.mean(loss_train[sequence]["tot"][-1]),
+        np.mean(loss_train[sequence]["pose"][-1]),
+        np.mean(loss_train[sequence]["rot"][-1])
+        ))
   train_elapsedT = time.time() - train_initT
 
-  somma = sum(loss_train["00"]["tot"])+sum(loss_train["02"]["tot"])+\
-      sum(loss_train["08"]["tot"])+sum(loss_train["09"]["tot"])
-  numero = len(loss_train["00"]["tot"])+len(loss_train["02"]["tot"])+\
-      len(loss_train["08"]["tot"])+len(loss_train["09"]["tot"])
-
-  loss_train["tot"]["tot"] = sum([np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries])/len(params.trainingSeries)
-  loss_train["tot"]["pose"] = sum([np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries])/len(params.trainingSeries)
-  loss_train["tot"]["rot"] = sum([np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries])/len(params.trainingSeries)
+  loss_train["tot"]["tot"].append(sum([np.mean(loss_train[seq]["tot"]) for seq in trainingSeries])/len(trainingSeries))
+  loss_train["tot"]["pose"].append(sum([np.mean(loss_train[seq]["pose"]) for seq in trainingSeries])/len(trainingSeries))
+  loss_train["tot"]["rot"].append(sum([np.mean(loss_train[seq]["rot"]) for seq in trainingSeries])/len(trainingSeries))
   with open("loss{}".format(suffixFileNameLosses), "a") as f:
       f.write("{}\n".format(str(loss_train)))
+  
+  PM.printD("saved on file {}.txt".format("{}loss{}".format(dir_History, suffixFileNameLosses)))
+  for sequence in trainingSeries:
+      del loss_train[sequence]
+  gc.collect()
+  torch.cuda.empty_cache()
 
 
+  # TODO
   print(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
   model.eval()
   model.training = False
