@@ -51,8 +51,7 @@ class DataGeneretor():
     bachSize = params.BACH_SIZE
     numBatch = params.NUM_BACH
     numImgs4Iter = numBatch*bachSize
-    # TODO
-    step = 1 # params.BACH_SIZE
+    step = params.BACH_SIZE
 
     def __init__(self, sequence, imageDir, prepreocF, attach=False):
         # str: path to sequences and poses
