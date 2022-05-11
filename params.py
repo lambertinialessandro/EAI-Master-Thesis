@@ -36,7 +36,8 @@ dir_History = os.path.join(dir_main, dir_History)
 
 #@markdown ---
 #@markdown ### Model settings:
-typeModel = "DeepVONet" #@param ["DeepVONet", "QuaternionDeepVONet"] {type:"string"}
+typeModel = "DeepVONet" #@param ["DeepVONet", "DeepVONet_FSM",
+                        #        "QuaternionDeepVONet", "QuaternionDeepVONet_FSM"] {type:"string"}
 typeCriterion = "MSELoss" #@param ["MSELoss"] {type:"string"}
 typeOptimizer = "Adam" #@param ["Adam", "SGD"] {type:"string"}
 
@@ -54,7 +55,7 @@ else:
     raise ValueError
 
 BACH_SIZE = 10 #@param {type:"number"}
-NUM_BACH = 1 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
+NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
 #@param[96, 192, 384] {type:"raw", allow-input: false}
@@ -65,16 +66,21 @@ if __dim_image == 1:
     DIM_LSTM = 10240 # = 1024 * 10
     WIDTH = 320
     HEIGHT = 96
+
+    # C = 1024 # TODO
+    # batch, dim1, dim2, channels = 10, 5, 2, 128 # TODO
+
 elif __dim_image == 2:
-    DIM_LSTM = 307200 # = 30 * 10240
-    WIDTH = 320
-    HEIGHT = 96
+    DIM_LSTM = 30720 # = 3 * 10240
+    WIDTH = 640
+    HEIGHT = 192
 elif __dim_image == 3:
-    DIM_LSTM = 1228800 # = 120 * 10240 || = 4 * 307200
-    WIDTH = 320
-    HEIGHT = 96
+    DIM_LSTM = 122880 # = 12 * 10240 || = 4 * 30720
+    WIDTH = 1280
+    HEIGHT = 384
 else:
     raise ValueError
+HIDDEN_SIZE_LSTM = 1000
 
 NUM_POSES = 6
 
