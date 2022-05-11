@@ -374,6 +374,98 @@ def testEpoch(imageDir, prepreocF):
 
 
 
+def trainEpochRandom(imageDir, prepreocF):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+
+    dataGens = []
+    for s in params.trainingSeries:
+        dataGens.append(DataGeneretor(s, imageDir, prepreocF, attach=True))
+
+    while len(dataGens) > 0:
+        pos_dg = random.randint(0, len(dataGens)-1)
+
+        try:
+            inputs, labels, pos, nb = dataGens[pos_dg].__next__()
+            outputs = []
+            # pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
+            # pts_out = np.array([[0, 0, 0, 0, 0, 0]])
+
+            for i in range(nb):
+                torch.cuda.empty_cache()
+
+                model.zero_grad()
+
+                outputs = model(inputs[i])
+                # if params.DEVICE.type == 'cuda':
+                #     det_outputs = outputs.cpu().detach().numpy()
+                #     det_labels = labels[i].cpu().detach().numpy()
+                # else:
+                #     det_outputs = outputs.detach().numpy()
+                #     det_labels = labels[i].detach().numpy()
+
+                totLoss = criterion(outputs, labels[i])
+                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+                totLoss.backward()
+                optimizer.step()
+
+                loss_train[dataGens[pos_dg].sequence]["tot"].append(totLoss.item())
+                loss_train[dataGens[pos_dg].sequence]["pose"].append(poseLoss)
+                loss_train[dataGens[pos_dg].sequence]["rot"].append(rotLoss)
+
+                # for j in range(params.BACH_SIZE):
+                #     pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
+                #     pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+            del inputs, labels#, det_outputs, det_labels,
+            del totLoss, poseLoss, rotLoss
+            gc.collect()
+            torch.cuda.empty_cache()
+        except StopIteration:
+            dataGens.remove(dataGens[pos_dg])
+        # del dg
+        # gc.collect()
+        # torch.cuda.empty_cache()
+
+        # PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+        #     np.mean(loss_train[sequence]["tot"][-1]),
+        #     np.mean(loss_train[sequence]["pose"][-1]),
+        #     np.mean(loss_train[sequence]["rot"][-1])
+        #     ))
+
+        # plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
+        # plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
+        # plt.legend(['out', 'yTest'])
+        # plt.show()
+
+        # ax = plt.axes(projection='3d')
+        # ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
+        # ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
+        # plt.legend(['out', 'yTest'])
+        # plt.show()
+        # del pts_yTrain, pts_out
+        # gc.collect()
+        # torch.cuda.empty_cache()
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
 
 FLAG_LOAD = False #@param {type:"boolean"}
 FLAG_SAVE_LOG = False #@param {type:"boolean"}
