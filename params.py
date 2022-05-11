@@ -56,6 +56,7 @@ else:
 
 BACH_SIZE = 10 #@param {type:"number"}
 NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
+STEP = 5 #@param {type:"number"}
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
 #@param[96, 192, 384] {type:"raw", allow-input: false}
