@@ -8,8 +8,8 @@ Created on Wed Mar  9 13:58:31 2022
 import torch.nn as nn
 import torch.optim as optim
 
-from DeepVONet import DeepVONet
-from QuaternionDeepVONet import QuaternionDeepVONet
+from DeepVONet import DeepVONet, DeepVONet_FSM
+from QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
 
 import params
 from utility import PM, bcolors
@@ -17,9 +17,13 @@ from utility import PM, bcolors
 def buildModel(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Adam"):
 
     if typeModel == "DeepVONet":
-        model = DeepVONet(sizeHidden=params.BACH_SIZE).to(params.DEVICE)
+        model = DeepVONet().to(params.DEVICE)
+    elif typeModel == "DeepVONet_FSM":
+        model = DeepVONet_FSM().to(params.DEVICE)
     elif typeModel == "QuaternionDeepVONet":
-        model = QuaternionDeepVONet(sizeHidden=params.BACH_SIZE).to(params.DEVICE)
+        model = QuaternionDeepVONet().to(params.DEVICE)
+    elif typeModel == "QuaternionDeepVONet_FSM":
+        model = QuaternionDeepVONet_FSM().to(params.DEVICE)
     else:
         raise ValueError
 
@@ -42,7 +46,7 @@ def buildModel(typeModel="DeepVONet", typeCriterion="MSELoss", typeOptimizer="Ad
     return model, criterion, optimizer
 
 def main():
-    typeModel = "DeepVONet" # "DeepVONet", "QuaternionDeepVONet"
+    typeModel = "DeepVONet" # "DeepVONet", "QuaternionDeepVONet", "DeepVONet_FSM", "QuaternionDeepVONet_FSM"
     typeCriterion = "MSELoss"
     typeOptimizer = "Adam" # "Adam", "SGD"
 
