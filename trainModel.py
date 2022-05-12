@@ -384,8 +384,11 @@ def trainEpochRandom(imageDir, prepreocF):
     train_initT = time.time()
 
     dataGens = []
+    outDisps = []
     for s in params.trainingSeries:
         dataGens.append(DataGeneretor(s, imageDir, prepreocF, attach=True))
+        PM.printI(bcolors.LIGHTGREEN+f"sequence: {s}"+bcolors.ENDC)
+        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
 
     while len(dataGens) > 0:
         pos_dg = random.randint(0, len(dataGens)-1)
@@ -393,8 +396,7 @@ def trainEpochRandom(imageDir, prepreocF):
         try:
             inputs, labels, pos, nb = dataGens[pos_dg].__next__()
             outputs = []
-            # pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
-            # pts_out = np.array([[0, 0, 0, 0, 0, 0]])
+            outDisps[pos_dg].update(pos)
 
             for i in range(nb):
                 torch.cuda.empty_cache()
@@ -402,12 +404,6 @@ def trainEpochRandom(imageDir, prepreocF):
                 model.zero_grad()
 
                 outputs = model(inputs[i])
-                # if params.DEVICE.type == 'cuda':
-                #     det_outputs = outputs.cpu().detach().numpy()
-                #     det_labels = labels[i].cpu().detach().numpy()
-                # else:
-                #     det_outputs = outputs.detach().numpy()
-                #     det_labels = labels[i].detach().numpy()
 
                 totLoss = criterion(outputs, labels[i])
                 poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
@@ -420,38 +416,19 @@ def trainEpochRandom(imageDir, prepreocF):
                 loss_train[dataGens[pos_dg].sequence]["pose"].append(poseLoss)
                 loss_train[dataGens[pos_dg].sequence]["rot"].append(rotLoss)
 
-                # for j in range(params.BACH_SIZE):
-                #     pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
-                #     pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
-            del inputs, labels#, det_outputs, det_labels,
-            del totLoss, poseLoss, rotLoss
+            del inputs, labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
         except StopIteration:
+            PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"][-1]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"][-1]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"][-1])
+                ))
+
             dataGens.remove(dataGens[pos_dg])
-        # del dg
-        # gc.collect()
-        # torch.cuda.empty_cache()
+            outDisps.remove(outDisps[pos_dg])
 
-        # PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-        #     np.mean(loss_train[sequence]["tot"][-1]),
-        #     np.mean(loss_train[sequence]["pose"][-1]),
-        #     np.mean(loss_train[sequence]["rot"][-1])
-        #     ))
-
-        # plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
-        # plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
-        # plt.legend(['out', 'yTest'])
-        # plt.show()
-
-        # ax = plt.axes(projection='3d')
-        # ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
-        # ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
-        # plt.legend(['out', 'yTest'])
-        # plt.show()
-        # del pts_yTrain, pts_out
-        # gc.collect()
-        # torch.cuda.empty_cache()
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
         [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
