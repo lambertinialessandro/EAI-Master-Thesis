@@ -10,6 +10,20 @@ from IPython.display import HTML, display
 
 from params import FLAG_DEBUG_PRINT, FLAG_INFO_PRINT
 
+
+class HTML_holder:
+    def __init__(self, value, max_v, *args, **kargs):
+        super().__init__(*args, **kargs)
+        self.max_v = max_v
+        self.progress = display(
+            HTML(f"<progress value='{value}' max='{self.max_v}', style='width: 50%' >\
+                  {value}</progress>"), display_id=True)
+
+    def update(self, value):
+        self.progress.update(
+            HTML(f"<progress value='{value}' max='{self.max_v}', style='width: 50%' >\
+                 {value}</progress>"))
+
 class PrintManager:
     def __init__(self, FLAG_DEBUG_PRINT=False, FLAG_INFO_PRINT=False):
         self.FLAG_DEBUG_PRINT = FLAG_DEBUG_PRINT
@@ -37,13 +51,9 @@ class PrintManager:
             if iteration == total:
                 print()
 
-    def HTMLProgressBarI(self, value, max=100):
+    def HTMLProgressBarI(self, value, max_v):
         if self.FLAG_INFO_PRINT:
-            return HTML("""
-              <progress value='{value}' max='{max}', style='width: 50%' >
-                  {value}
-              </progress>
-            """.format(value=value, max=max))
+            return HTML_holder(value, max_v)
 
     # Info
     def printI(self, msg, head=""):
@@ -91,9 +101,9 @@ def main():
     pm.printProgressBarI(5, 5)
 
     # working on colab
-    progress = display(pm.HTMLProgressBarI(0, 5-1), display_id=True)
+    progress = pm.HTMLProgressBarI(0, 5-1)
     for i in range(5):
-        progress.update(pm.HTMLProgressBarI(i, 5-1))
+        progress.update(i)
         time.sleep(0.2)
 
 if __name__ == "__main__":
