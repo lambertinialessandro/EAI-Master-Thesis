@@ -177,7 +177,8 @@ class DataGeneretor():
         return imagesSet, posesSet
 
     def __str__(self):
-        return f"bachSize {self.bachSize}\n"+\
+        return f"sequence {self.sequence}\n"+\
+               f"bachSize {self.bachSize}\n"+\
                f"numBatch {self.numBatch}\n"+\
                f"numImgs4Iter {self.numImgs4Iter}\n"+\
                f"step {self.step}\n"+\
