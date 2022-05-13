@@ -16,7 +16,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from loadData import DataGeneretor, DataLoader, attach2Torch
+from loadData import DataGeneretor, RandomDataGeneretor, DataLoader, attach2Torch
 from buildModel import buildModel
 
 import params
@@ -420,7 +420,7 @@ def trainEpochRandom(imageDir, prepreocF):
             gc.collect()
             torch.cuda.empty_cache()
         except StopIteration:
-            PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            PM.printI("Loss Sequence[{dataGens[pos_dg].sequence}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
                 np.mean(loss_train[dataGens[pos_dg].sequence]["tot"][-1]),
                 np.mean(loss_train[dataGens[pos_dg].sequence]["pose"][-1]),
                 np.mean(loss_train[dataGens[pos_dg].sequence]["rot"][-1])
@@ -428,6 +428,66 @@ def trainEpochRandom(imageDir, prepreocF):
 
             dataGens.remove(dataGens[pos_dg])
             outDisps.remove(outDisps[pos_dg])
+
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
+        )/len(params.trainingSeries))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
+
+def trainEpochRandom_RDG(imageDir, prepreocF):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, prepreocF, attach=True)
+    train_numOfBatch = rdg.maxPos-1
+    outputs = []
+
+    for inputs, labels, pos, seq, nb in rdg:
+        for i in range(nb):
+            torch.cuda.empty_cache()
+
+            model.zero_grad()
+
+            outputs = model(inputs[i])
+
+            totLoss = criterion(outputs, labels[i])
+            poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+            rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+            totLoss.backward()
+            optimizer.step()
+
+            loss_train[seq]["tot"].append(totLoss.item())
+            loss_train[seq]["pose"].append(poseLoss)
+            loss_train[seq]["rot"].append(rotLoss)
+        del inputs, labels, totLoss, poseLoss, rotLoss
+        gc.collect()
+        torch.cuda.empty_cache()
+        PM.printProgressBarI(pos, train_numOfBatch)
+    del rdg
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    for s in params.trainingSeries:
+        PM.printI(f"Loss Sequence[{s}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[s]["tot"][-1]),
+            np.mean(loss_train[s]["pose"][-1]),
+            np.mean(loss_train[s]["rot"][-1])
+            ))
 
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
@@ -465,7 +525,7 @@ suffixFileNameSave = "{}[{}-{}]"
 
 imageDir = "image_2"
 prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
-type_train = "online_random" # online, preprocessed, online_random
+type_train = "online_random_RDG" # online, preprocessed, online_random, online_random_RDG
 
 
 try:
@@ -504,6 +564,8 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         loss_train, train_elapsedT = trainEpochPreprocessed()
     elif type_train == "online_random":
         loss_train, train_elapsedT = trainEpochRandom(imageDir, prepreocF)
+    elif type_train == "online_random_RDG":
+        loss_train, train_elapsedT = trainEpochRandom_RDG(imageDir, prepreocF)
     else:
         raise NotImplementedError
 
@@ -538,7 +600,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
 
 
 
-    if type_train == "online" or type_train == "online_random":
+    if type_train == "online" or type_train == "online_random" or type_train == "online_random_RDG":
         loss_test, test_elapsedT = testEpoch(imageDir, prepreocF)
     elif type_train == "preprocessed":
         loss_test, test_elapsedT = testEpochPreprocessed()

@@ -16,9 +16,10 @@ from utility import PM, bcolors
 
 # TODO
 def isRotationMatrix(R):
-    RT = np.transpose(R)
-    n = np.linalg.norm(np.identity(3, dtype = R.dtype) - np.dot(RT, R))
-    return n < 1e-6
+    n_R = np.linalg.norm(
+              np.identity(3, dtype = R.dtype) - np.dot(np.transpose(R), R)
+          )
+    return n_R < 1e-6
 # TODO
 def rotationMatrix2EulerAngles(R):
     assert(isRotationMatrix(R))
@@ -42,8 +43,7 @@ def poseFile2poseRobot(posef):
                   [posef[8], posef[9], posef[10]]])
 
     angles = rotationMatrix2EulerAngles(R)
-    pose = np.concatenate((p, angles))
-    return pose
+    return np.concatenate((p, angles))
 
 class DataGeneretor():
     path_sequences = params.path_sequences
@@ -75,6 +75,9 @@ class DataGeneretor():
         self.numImgs, _ = self.loadedPoses.shape
         # num of poses should be equal tu the number of images
         assert self.numImgs == len(self.nameImgs)
+
+        self.numImgs = 15 # (int(sequence)+1)*self.bachSize + self.step # 15 # TODO  remove
+
         self.numBatchImgs = (self.numImgs - self.step)//self.numImgs4Iter
 
         # var for the iter
@@ -188,6 +191,63 @@ class DataGeneretor():
                f"currPos {self.currPos}\n"+\
                f"maxPos {self.maxPos}\n"
 
+class RandomDataGeneretor():
+    path_sequences = params.path_sequences
+    path_poses = params.path_poses
+    bachSize = params.BACH_SIZE
+    numBatch = params.NUM_BACH
+    numImgs4Iter = numBatch*bachSize
+    step = params.STEP
+
+    def __init__(self, sequences, imageDir, prepreocF, attach=False):
+        self.sequences = sequences
+
+        self.currPos = 0
+        self.shiftPos = 0
+        self.maxPos = 0
+
+        self.dgToDo = []
+        for s in sequences:
+            dg = DataGeneretor(s, imageDir, prepreocF, attach=attach)
+            self.dgToDo.append(dg)
+            self.maxPos = self.maxPos + dg.maxPos
+        self.dgDone = []
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.currPos >= self.maxPos:
+            for dg in self.dgToDo:
+                self.dgDone.append(dg)
+                self.dgToDo.remove(dg)
+            raise StopIteration
+        else:
+            while True:
+                try:
+                    dgToDo_pos = (self.currPos-self.shiftPos)%len(self.dgToDo)
+                    #print(dgToDo_pos)
+                    #print(self.dgToDo[dgToDo_pos].sequence)
+                    imagesSet, posesSet, _, nb = self.dgToDo[dgToDo_pos].__next__()
+                    break
+                except StopIteration:
+                    #"print(f"-- terminated {self.dgToDo[dgToDo_pos].sequence}")
+                    self.shiftPos = 1
+                    self.dgDone.append(self.dgToDo[dgToDo_pos])
+                    self.dgToDo.remove(self.dgToDo[dgToDo_pos])
+
+        seq = self.dgToDo[dgToDo_pos].sequence
+        pos = self.currPos
+        self.currPos = self.currPos + 1
+        return imagesSet, posesSet, pos, seq, nb
+
+    def __str__(self):
+        return f"sequences {self.sequences}\n"+\
+               f"maxPos {self.maxPos}\n\n"+\
+               "dgToDo: \n"+\
+               ' '.join([f"{dg}\n\n" for dg in self.dgToDo])+\
+               "dgDone: \n"+\
+               ' '.join([f"{dg}\n\n" for dg in self.dgDone])
 
 
 ########### TODO
@@ -325,6 +385,27 @@ def main():
     # prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
 
 
+
+
+    rdg = RandomDataGeneretor(["00", "01", "03", "04"], imageDir, prepreocF, attach=False)
+    print(rdg)
+
+    for imageBatchSet, posesBatchSet, pos, nb in rdg:
+        print(f"pos: {pos}")
+        print(f"imageBatchSet: {imageBatchSet.shape}")
+        print(f"posesBatchSet: {posesBatchSet.shape}")
+        for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
+            print(f"imagesSet: {imagesSet.shape}")
+            print(f"posesSet: {posesSet.shape}")
+            for image, pose in zip(imagesSet, posesSet):
+                print(pose)
+                prepreocF.printImage(image[:, :, 0:3])
+                prepreocF.printImage(image[:, :, 3:6])
+                break
+            break
+
+
+
     dataGens = []
     for s in params.trainingSeries:
         dataGens.append(DataGeneretor(s, imageDir, prepreocF, attach=False))
@@ -429,3 +510,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
