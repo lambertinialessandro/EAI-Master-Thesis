@@ -1,0 +1,10 @@
+**/.DS_Store
+
+### File format ###
+**.zip
+**.pyc
+**.md
+.gitignore
+
+### Directories ###
+__pycache__
