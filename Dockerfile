@@ -20,17 +20,11 @@ WORKDIR /home/app/
 #	docker run --gpus 1 -ti dockerID python3 main.py
 #	docker run --gpus 1 --ipc=host -ti dockerID python3 main.py
 
-!wget 'https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_color.zip' -O '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/data_odometry_color.zip'
-!unzip '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/data_odometry_color.zip' -d '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/'
+CMD mkdir -p ./Dataset
 
-!wget 'https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_poses.zip' -O '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/data_odometry_poses.zip'
-!unzip '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/data_odometry_poses.zip' -d '/content/drive/My Drive/Colab Notebooks/Thesis/Dataset/'
+CMD wget https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_color.zip -O ./
+CMD unzip ./data_odometry_color.zip -d ./Dataset
 
-CMD["mkdir", "-p", "./Dataset"]
-
-CMD["wget", "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_color.zip", "-O", "./"]
-CMD["unzip", "./data_odometry_color.zip", "-d", "./Dataset"]
-
-CMD["wget", "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_poses.zip", "-O", "./"]
-CMD["mkdir", "./data_odometry_poses.zip", "-d", "./Dataset"]
+CMD wget https://s3.eu-central-1.amazonaws.com/avg-kitti/data_odometry_poses.zip -O ./
+CMD mkdir ./data_odometry_poses.zip -d ./Dataset
 
