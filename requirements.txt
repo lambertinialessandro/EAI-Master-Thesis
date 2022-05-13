@@ -1,0 +1,11 @@
+
+torch==1.11.0
+
+numpy
+cv2
+glob
+Image
+scipy
+skimage
+matplotlib
+IPython
