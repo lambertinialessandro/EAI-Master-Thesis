@@ -68,9 +68,9 @@ def trainEpochPreprocessed():
             gc.collect()
             torch.cuda.empty_cache()
         PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[sequence]["tot"][-1]),
-            np.mean(loss_train[sequence]["pose"][-1]),
-            np.mean(loss_train[sequence]["rot"][-1])
+            np.mean(loss_train[sequence]["tot"]),
+            np.mean(loss_train[sequence]["pose"]),
+            np.mean(loss_train[sequence]["rot"])
             ))
         del X
         gc.collect()
@@ -157,9 +157,9 @@ def testEpochPreprocessed():
             gc.collect()
             torch.cuda.empty_cache()
         PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_test[sequence]["tot"][-1]),
-            np.mean(loss_test[sequence]["pose"][-1]),
-            np.mean(loss_test[sequence]["rot"][-1])
+            np.mean(loss_test[sequence]["tot"]),
+            np.mean(loss_test[sequence]["pose"]),
+            np.mean(loss_test[sequence]["rot"])
             ))
         del X
         gc.collect()
@@ -263,9 +263,9 @@ def trainEpoch(imageDir, prepreocF):
         torch.cuda.empty_cache()
 
         PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[sequence]["tot"][-1]),
-            np.mean(loss_train[sequence]["pose"][-1]),
-            np.mean(loss_train[sequence]["rot"][-1])
+            np.mean(loss_train[sequence]["tot"]),
+            np.mean(loss_train[sequence]["pose"]),
+            np.mean(loss_train[sequence]["rot"])
             ))
 
         plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
@@ -307,7 +307,7 @@ def testEpoch(imageDir, prepreocF):
     for sequence in params.testingSeries:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         dg = DataGeneretor(sequence, imageDir, prepreocF, attach=True)
-        test_numOfBatch = dg.numBatchImgs
+        test_numOfBatch = dg.numBatchImgs - 1
 
         pts_yTest = np.array([[0, 0, 0, 0, 0, 0]])
         pts_out = np.array([[0, 0, 0, 0, 0, 0]])
@@ -337,11 +337,15 @@ def testEpoch(imageDir, prepreocF):
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
-            PM.printProgressBarI(i, test_numOfBatch)
+            PM.printProgressBarI(pos, test_numOfBatch)
+        del dg
+        gc.collect()
+        torch.cuda.empty_cache()
+
         PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_test[sequence]["tot"][-1]),
-            np.mean(loss_test[sequence]["pose"][-1]),
-            np.mean(loss_test[sequence]["rot"][-1])
+            np.mean(loss_test[sequence]["tot"]),
+            np.mean(loss_test[sequence]["pose"]),
+            np.mean(loss_test[sequence]["rot"])
             ))
 
         plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
@@ -368,7 +372,8 @@ def testEpoch(imageDir, prepreocF):
         [np.mean(loss_test[seq]["rot"]) for seq in params.testingSeries]
         )/len(params.testingSeries))
     PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT))
+        loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT),
+        head="\n")
 
     return loss_test, test_elapsedT
 
@@ -421,9 +426,9 @@ def trainEpochRandom(imageDir, prepreocF):
             torch.cuda.empty_cache()
         except StopIteration:
             PM.printI("Loss Sequence[{dataGens[pos_dg].sequence}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"][-1]),
-                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"][-1]),
-                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"][-1])
+                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"])
                 ))
 
             dataGens.remove(dataGens[pos_dg])
@@ -444,6 +449,8 @@ def trainEpochRandom(imageDir, prepreocF):
 
     return loss_train, train_elapsedT
 
+
+
 def trainEpochRandom_RDG(imageDir, prepreocF):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
 
@@ -453,7 +460,7 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
 
     train_initT = time.time()
     rdg = RandomDataGeneretor(params.trainingSeries, imageDir, prepreocF, attach=True)
-    train_numOfBatch = rdg.maxPos-1
+    train_numOfBatch = rdg.maxIters-1
     outputs = []
 
     for inputs, labels, pos, seq, nb in rdg:
@@ -471,9 +478,9 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
             totLoss.backward()
             optimizer.step()
 
-            loss_train[seq]["tot"].append(totLoss.item())
-            loss_train[seq]["pose"].append(poseLoss)
-            loss_train[seq]["rot"].append(rotLoss)
+            loss_train[seq[i]]["tot"].append(totLoss.item())
+            loss_train[seq[i]]["pose"].append(poseLoss)
+            loss_train[seq[i]]["rot"].append(rotLoss)
         del inputs, labels, totLoss, poseLoss, rotLoss
         gc.collect()
         torch.cuda.empty_cache()
@@ -483,10 +490,10 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
     torch.cuda.empty_cache()
 
     for s in params.trainingSeries:
-        PM.printI(f"Loss Sequence[{s}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[s]["tot"][-1]),
-            np.mean(loss_train[s]["pose"][-1]),
-            np.mean(loss_train[s]["rot"][-1])
+        PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[s]["tot"]),
+            np.mean(loss_train[s]["pose"]),
+            np.mean(loss_train[s]["rot"])
             ))
 
     train_elapsedT = time.time() - train_initT
@@ -500,17 +507,20 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
         [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
         )/len(params.trainingSeries))
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT),
+        head="\n")
 
     return loss_train, train_elapsedT
+
+
 
 FLAG_LOAD = False #@param {type:"boolean"}
 FLAG_SAVE_LOG = False #@param {type:"boolean"}
 FLAG_SAVE = False #@param {type:"boolean"}
 
 BASE_EPOCH = 1 #@param {type:"raw"} # 1 starting epoch
-NUM_EPOCHS = 1 #@param {type:"raw"} # 10 how many epoch
-print(f"[{BASE_EPOCH}-{BASE_EPOCH+NUM_EPOCHS-1}]")
+NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"raw"} # 10 how many epoch
+PM.printD(f"[{BASE_EPOCH}-{BASE_EPOCH+NUM_EPOCHS-1}]\n")
 
 fileNameFormat = "medium"
 
