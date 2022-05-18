@@ -564,6 +564,8 @@ else:
 
 
 
+loss_train_epochs = {"tot":[], "pose":[], "rot":[]}
+loss_test_epochs = {"tot":[], "pose":[], "rot":[]}
 for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
     #trainEpoch(imageDir, prepreocF)
     PM.printI(bcolors.LIGHTRED+"EPOCH {}/{}\n".format(epoch, BASE_EPOCH+NUM_EPOCHS-1)+bcolors.ENDC)
@@ -635,8 +637,31 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
     PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs\n"%(
         loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT))
 
+    for k in loss_train_epochs.keys():
+        loss_train_epochs[k].append(loss_train["tot"][k])
+        loss_test_epochs[k].append(loss_test["tot"][k])
+
     del loss_train, loss_test
     gc.collect()
     torch.cuda.empty_cache()
+
+
+    dimX = len(loss_train_epochs['tot'])
+    x = np.linspace(1, dimX, dimX)
+    plt.figure(figsize=(8, 6), dpi=80)
+    plt.plot(x, loss_train_epochs['tot'], color='red')
+    plt.plot(x, loss_train_epochs['pose'], color='blue')
+    plt.plot(x, loss_train_epochs['rot'], color='green')
+    plt.legend(['total loss', 'position loss', 'rotation loss'])
+    plt.show()
+
+    dimX = len(loss_test_epochs['tot'])
+    x = np.linspace(1, dimX, dimX)
+    plt.figure(figsize=(8, 6), dpi=80)
+    plt.plot(x, loss_test_epochs['tot'], color='red')
+    plt.plot(x, loss_test_epochs['pose'], color='blue')
+    plt.plot(x, loss_test_epochs['rot'], color='green')
+    plt.legend(['total loss', 'position loss', 'rotation loss'])
+    plt.show()
 
 
