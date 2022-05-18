@@ -515,8 +515,9 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
 
 
 FLAG_LOAD = False #@param {type:"boolean"}
-FLAG_SAVE_LOG = False #@param {type:"boolean"}
-FLAG_SAVE = False #@param {type:"boolean"}
+FLAG_SAVE_LOG = True #@param {type:"boolean"}
+SAVE_STEP = 35
+FLAG_SAVE = True #@param {type:"boolean"}
 
 BASE_EPOCH = 1 #@param {type:"raw"} # 1 starting epoch
 NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"raw"} # 10 how many epoch
@@ -600,7 +601,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
                   }, fileName)
         PM.printI(bcolors.LIGHTGREEN+"Saved {}\n".format(fileName)+bcolors.ENDC)
 
-        if epoch != BASE_EPOCH:
+        if (epoch-BASE_EPOCH) % SAVE_STEP != 0:
             suffix = suffixFileNameSave.format(fileNameFormat, BASE_EPOCH, epoch-1)
             fileName = os.path.join(params.dir_Model, f"{prefixFileNameSave}{suffix}.pt")
             os.remove(fileName)
