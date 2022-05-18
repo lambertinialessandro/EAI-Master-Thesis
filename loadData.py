@@ -201,6 +201,7 @@ class RandomDataGeneretor():
 
     def __init__(self, sequences, imageDir, prepreocF, attach=False):
         self.sequences = sequences
+        self.attach = attach
 
         self.currPos = 0
         self.shiftPos = 0
@@ -208,7 +209,7 @@ class RandomDataGeneretor():
 
         self.dgToDo = []
         for s in sequences:
-            dg = DataGeneretor(s, imageDir, prepreocF, attach=attach)
+            dg = DataGeneretor(s, imageDir, prepreocF, attach=False)
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
         self.dgDone = []
@@ -235,11 +236,26 @@ class RandomDataGeneretor():
                     self.shiftPos = 1
                     self.dgDone.append(self.dgToDo[dgToDo_pos])
                     self.dgToDo.remove(self.dgToDo[dgToDo_pos])
+        if self.attach:
+            imagesSet, posesSet = self._attach2Torch(imagesSet, posesSet)
 
         seq = self.dgToDo[dgToDo_pos].sequence
         pos = self.currPos
         self.currPos = self.currPos + 1
         return imagesSet, posesSet, pos, seq, nb
+
+    def _attach2Torch(self, imagesSet, posesSet):
+        imagesSet = [torch.FloatTensor(imagesSet).to(params.DEVICE)]
+        posesSet = [torch.FloatTensor(posesSet).to(params.DEVICE)]
+
+        nb, bb, hh, ww, cc = imagesSet[0].size()
+        nb2, bb2, pp = posesSet[0].size()
+        assert nb == nb2 and bb == bb2
+
+        imagesSet = torch.stack(imagesSet).view(-1, bb, cc, ww, hh)
+        posesSet = torch.stack(posesSet).view(-1, bb, pp)
+
+        return imagesSet, posesSet
 
     def __str__(self):
         return f"sequences {self.sequences}\n"+\
