@@ -56,6 +56,7 @@ else:
 
 BACH_SIZE = 10 #@param {type:"number"}
 NUM_BACH = 1 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
+RDG_ITER = 1
 STEP = 5 #@param {type:"number"}
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}

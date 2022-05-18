@@ -76,7 +76,7 @@ class DataGeneretor():
         # num of poses should be equal tu the number of images
         assert self.numImgs == len(self.nameImgs)
 
-        self.numImgs = 15 # (int(sequence)+1)*self.bachSize + self.step # 15 # TODO  remove
+        #│self.numImgs = 15 * 3 # (int(sequence)+1)*self.bachSize + self.step # 15 # TODO  remove
 
         self.numBatchImgs = (self.numImgs - self.step)//self.numImgs4Iter
 
@@ -198,6 +198,7 @@ class RandomDataGeneretor():
     numBatch = params.NUM_BACH
     numImgs4Iter = numBatch*bachSize
     step = params.STEP
+    iters = len(params.trainingSeries)* params.RDG_ITER
 
     def __init__(self, sequences, imageDir, prepreocF, attach=False):
         self.sequences = sequences
@@ -212,34 +213,76 @@ class RandomDataGeneretor():
             dg = DataGeneretor(s, imageDir, prepreocF, attach=False)
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
+        self.maxIters = self.maxPos//self.iters
         self.dgDone = []
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self.currPos >= self.maxPos:
+        if self.currPos > self.maxIters:
             for dg in self.dgToDo:
                 self.dgDone.append(dg)
                 self.dgToDo.remove(dg)
             raise StopIteration
-        else:
-            while True:
+        elif self.currPos == self.maxIters:
+            imagesSet = None
+            posesSet = None
+            seq = []
+            nb = 0
+            while len(self.dgToDo) > 0:
                 try:
                     dgToDo_pos = (self.currPos-self.shiftPos)%len(self.dgToDo)
                     #print(dgToDo_pos)
                     #print(self.dgToDo[dgToDo_pos].sequence)
-                    imagesSet, posesSet, _, nb = self.dgToDo[dgToDo_pos].__next__()
-                    break
+                    imageSet, poseSet, _, nb_dg = self.dgToDo[dgToDo_pos].__next__()
+                    nb = nb + nb_dg
+
+                    seq.append(self.dgToDo[dgToDo_pos].sequence)
+                    if imagesSet is None:
+                        imagesSet = imageSet
+                        posesSet = poseSet
+                    else:
+                        imagesSet = np.append(imagesSet, imageSet, axis=0)
+                        posesSet = np.append(posesSet, poseSet, axis=0)
                 except StopIteration:
                     #"print(f"-- terminated {self.dgToDo[dgToDo_pos].sequence}")
                     self.shiftPos = 1
                     self.dgDone.append(self.dgToDo[dgToDo_pos])
                     self.dgToDo.remove(self.dgToDo[dgToDo_pos])
+            if imagesSet is None or posesSet is None:
+                raise StopIteration
+        else:
+            imagesSet = None
+            posesSet = None
+            seq = []
+            nb = 0
+            for i in range(self.iters):
+                while True:
+                    try:
+                        dgToDo_pos = (self.currPos+i-self.shiftPos)%len(self.dgToDo)
+                        #print(dgToDo_pos)
+                        #print(self.dgToDo[dgToDo_pos].sequence)
+                        imageSet, poseSet, _, nb_dg = self.dgToDo[dgToDo_pos].__next__()
+                        nb = nb + nb_dg
+
+                        seq.append(self.dgToDo[dgToDo_pos].sequence)
+                        if imagesSet is None:
+                            imagesSet = imageSet
+                            posesSet = poseSet
+                        else:
+                            imagesSet = np.append(imagesSet, imageSet, axis=0)
+                            posesSet = np.append(posesSet, poseSet, axis=0)
+                        break
+                    except StopIteration:
+                        #"print(f"-- terminated {self.dgToDo[dgToDo_pos].sequence}")
+                        self.shiftPos = 1
+                        self.dgDone.append(self.dgToDo[dgToDo_pos])
+                        self.dgToDo.remove(self.dgToDo[dgToDo_pos])
+
         if self.attach:
             imagesSet, posesSet = self._attach2Torch(imagesSet, posesSet)
 
-        seq = self.dgToDo[dgToDo_pos].sequence
         pos = self.currPos
         self.currPos = self.currPos + 1
         return imagesSet, posesSet, pos, seq, nb
