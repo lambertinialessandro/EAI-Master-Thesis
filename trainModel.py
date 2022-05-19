@@ -516,11 +516,11 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
 
 FLAG_LOAD = False #@param {type:"boolean"}
 FLAG_SAVE_LOG = True #@param {type:"boolean"}
-SAVE_STEP = 35
+SAVE_STEP = 35 #@param {type:"number"}
 FLAG_SAVE = True #@param {type:"boolean"}
 
-BASE_EPOCH = 1 #@param {type:"raw"} # 1 starting epoch
-NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"raw"} # 10 how many epoch
+BASE_EPOCH = 1 #@param {type:"number"} # 1 starting epoch
+NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"number"} # 10 how many epoch
 PM.printD(f"[{BASE_EPOCH}-{BASE_EPOCH+NUM_EPOCHS-1}]\n")
 
 fileNameFormat = "medium"
@@ -550,7 +550,7 @@ model, criterion, optimizer = buildModel(typeModel=params.typeModel,
                                         typeCriterion=params.typeCriterion,
                                         typeOptimizer=params.typeOptimizer)
 
-#Load the model
+# Load the model
 if FLAG_LOAD:
     fileName = os.path.join(params.dir_Model, f"{prefixFileNameLoad}{suffixFileNameLoad}.pt")
     checkpoint = torch.load(fileName)
@@ -567,10 +567,10 @@ else:
 loss_train_epochs = {"tot":[], "pose":[], "rot":[]}
 loss_test_epochs = {"tot":[], "pose":[], "rot":[]}
 for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
-    #trainEpoch(imageDir, prepreocF)
     PM.printI(bcolors.LIGHTRED+"EPOCH {}/{}\n".format(epoch, BASE_EPOCH+NUM_EPOCHS-1)+bcolors.ENDC)
 
 
+    # Train the model
     if type_train == "online":
         loss_train, train_elapsedT = trainEpoch(imageDir, prepreocF)
     elif type_train == "preprocessed":
@@ -583,6 +583,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         raise NotImplementedError
 
 
+    # Save the log file
     if FLAG_SAVE_LOG:
         suffix = suffixFileNameLosses.format(fileNameFormat, epoch)
         fileName = os.path.join(params.dir_History, f"{prefixFileNameLosses}{suffix}.txt")
@@ -593,7 +594,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         PM.printD(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
 
-    #Save the model
+    # Save the model
     if FLAG_SAVE:
         suffix = suffixFileNameSave.format(fileNameFormat, BASE_EPOCH, epoch)
         fileName = os.path.join(params.dir_Model, f"{prefixFileNameSave}{suffix}.pt")
@@ -612,7 +613,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         PM.printI(bcolors.LIGHTRED+"Model not Saved\n"+bcolors.ENDC)
 
 
-
+    # Test the model
     if type_train == "online" or type_train == "online_random" or type_train == "online_random_RDG":
         loss_test, test_elapsedT = testEpoch(imageDir, prepreocF)
     elif type_train == "preprocessed":
@@ -621,6 +622,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         raise NotImplementedError
 
 
+    # Save the log file
     if FLAG_SAVE_LOG:
         suffix = suffixFileNameLosses.format(fileNameFormat, epoch)
         fileName = os.path.join(params.dir_History, f"{prefixFileNameLosses}{suffix}.txt")
@@ -631,6 +633,7 @@ for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
         PM.printI(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
 
+    # Epoch summary and plot
     PM.printI("epoch %d"%(epoch), head="\n")
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
