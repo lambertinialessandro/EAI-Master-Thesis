@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Feb  3 11:30:41 2022
-
-@author: lambe
-"""
 
 import matplotlib.pyplot as plt
 from IPython.display import HTML, display

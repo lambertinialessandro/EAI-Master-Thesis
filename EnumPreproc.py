@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 29 10:20:02 2022
-
-@author: lambe
-"""
 
 from enum import Enum
 

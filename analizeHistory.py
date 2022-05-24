@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 18 21:36:49 2022
-
-@author: lambe
-"""
 
 import os
 import re

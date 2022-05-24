@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar  9 13:58:31 2022
-
-@author: lambe
-"""
 
 import torch.nn as nn
 import torch.optim as optim

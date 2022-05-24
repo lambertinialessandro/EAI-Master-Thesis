@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 12 15:17:53 2022
-
-@author: lambe
-"""
 
 """
 r11 r12 r13 tx

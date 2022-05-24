@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Mar  9 14:36:00 2022
-
-@author: lambe
-"""
 
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'

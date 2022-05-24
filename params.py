@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar  8 14:29:52 2022
-
-@author: lambe
-"""
 
 #@title  { run: "auto", vertical-output: true, form-width: "50%", display-mode: "both" }
 #@markdown # Global Variables:

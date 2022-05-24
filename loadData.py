@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar  8 14:23:56 2022
-
-@author: lambe
-"""
 
 import os
 import math
