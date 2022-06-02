@@ -14,8 +14,7 @@ import time
 import numpy as np
 
 from EnumPreproc import EnumPreproc
-from params import dir_main, dir_Dataset, dir_Model, dir_History, path_sequences,\
-    path_poses, WIDTH, HEIGHT
+import params
 from utility import PM, bcolors
 
 
@@ -36,7 +35,7 @@ def readImgsToList(path, files, N, typePreproc):
 
     for f in files:
         PM.printProgressBarI(pos, N)
-        img2 = typePreproc.processImage(path+f)
+        img2 = typePreproc.processImage(os.path.join(path, f))
 
         if pos > 0:
             h1, w1, c1 = img1.shape
@@ -102,13 +101,13 @@ def readPosesFromFile(posesSet, N, path):
 def convertDataset(listTypePreproc):
     for dirSeqName in ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']:
         #os.listdir(path_sequences):
-        dirSeq = path_sequences+dirSeqName+"/"
+        dirSeq = os.path.join(params.path_sequences, dirSeqName)
         if not os.path.isdir(dirSeq):
             continue
 
         PM.printI(bcolors.DARKYELLOW+"Converting: "+dirSeqName+bcolors.ENDC, head="\n")
         for imgsSeqName in os.listdir(dirSeq): # ['image_2']
-            imgsSeq = dirSeq+imgsSeqName+"/"
+            imgsSeq = os.path.join(dirSeq, imgsSeqName)
             if not os.path.isdir(imgsSeq):
                 continue
 
@@ -116,24 +115,25 @@ def convertDataset(listTypePreproc):
             imgs_N = len(x_files)
 
             for typePreproc in listTypePreproc:
-                suffix = "_{}_{}_{}_loaded.npy".format(typePreproc.name, WIDTH, HEIGHT)
+                suffix = "_{}_{}_{}_loaded.npy".format(typePreproc.name, params.WIDTH, params.HEIGHT)
+                pathFinalFile = os.path.join(dirSeq, imgsSeqName + suffix)
 
-                if os.path.isfile(dirSeq+imgsSeqName+suffix):
-                    PM.printD("Already converted ["+dirSeq+imgsSeqName+suffix+"]!!")
+                if os.path.isfile(pathFinalFile):
+                    PM.printD("Already converted ["+pathFinalFile+"]!!")
                 else:
-                    PM.printD("Converting --> ["+dirSeq+imgsSeqName+suffix+"]")
+                    PM.printD("Converting --> ["+pathFinalFile+"]")
                     initT = time.time()
 
                     imagesSet = readImgsToList(imgsSeq, x_files, imgs_N, typePreproc)
-                    PM.printD("Saving on file: "+dirSeq+imgsSeqName+suffix)
-                    np.save(dirSeq+imgsSeqName+suffix, imagesSet, allow_pickle=False)
+                    PM.printD("Saving on file: "+pathFinalFile)
+                    np.save(pathFinalFile, imagesSet, allow_pickle=False)
                     elapsedT = time.time() - initT
                     PM.printD("Time needed: %.2fs for %d images"%(elapsedT, imgs_N))
 
-                PM.printI(bcolors.DARKGREEN+"Done: "+dirSeq+imgsSeqName+suffix+bcolors.ENDC)
+                PM.printI(bcolors.DARKGREEN+"Done: "+pathFinalFile+bcolors.ENDC)
 
 
-        poseFileName = path_poses+dirSeqName+"_pose_loaded.npy"
+        poseFileName = os.path.join(params.path_poses, dirSeqName+"_pose_loaded.npy")
         if os.path.isfile(poseFileName):
             PM.printD("Already converted [poses/"+dirSeqName+".txt]!!")
             PM.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
@@ -142,8 +142,8 @@ def convertDataset(listTypePreproc):
             initT = time.time()
 
             posesSet = []
-            fileName = path_poses+dirSeqName+'.txt'
-            if os.path.isfile(path_poses+dirSeqName+'.txt'):
+            fileName = os.path.join(params.path_poses, dirSeqName+'.txt')
+            if os.path.isfile(fileName):
                 readPosesFromFile(posesSet, imgs_N, fileName)
 
                 PM.printD("Saving on file: "+poseFileName)
@@ -159,13 +159,16 @@ def convertDataset(listTypePreproc):
 
 def main():
     PM.printI(bcolors.DARKYELLOW+"Checking directories"+bcolors.ENDC+" ###\n")
-    dirs = [dir_main, dir_Dataset, path_sequences, dir_Model, dir_History]
+    dirs = [params.dir_main, params.dir_Dataset, params.path_sequences,
+            params.dir_Model, params.dir_History]
     checkExistDirs(dirs)
     PM.printI("Directories checked!")
 
     # listTypePreproc = EnumPreproc.listAllPreproc((WIDTH, HEIGHT))
-    listTypePreproc = [EnumPreproc.UNCHANGED((WIDTH, HEIGHT)),
-                       EnumPreproc.QUAD_PURE((WIDTH, HEIGHT))]
+    # listTypePreproc = [EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT)),
+    #                    EnumPreproc.QUAD_PURE((params.WIDTH, params.HEIGHT))]
+    listTypePreproc = [EnumPreproc.SOBEL((params.WIDTH, params.HEIGHT))]
+
     PM.printI(bcolors.DARKYELLOW+"Converting dataset"+bcolors.ENDC+" ###", head="\n")
     convertDataset(listTypePreproc)
     PM.printI("Done dataset convertion!")
