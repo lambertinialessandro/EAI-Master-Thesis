@@ -48,6 +48,36 @@ class UnchangedFunPreproc(AbstractFunPreproc):
         im = cv2.resize(im, self.imgSize, self.interpolation);
         return im
 
+class SobelFunPreproc(AbstractFunPreproc):
+    name = "SOBEL"
+    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
+                 interpolation=cv2.INTER_AREA):
+        super().__init__(imgSize, imreadFlag, interpolation)
+
+    def printImage(self, image):
+        PM.imshowD(image)
+
+    def processImage(self, imgPath):
+        im = cv2.imread(imgPath, self.imreadFlag)
+        im = cv2.resize(im, self.imgSize, self.interpolation);
+
+        gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+        gray = cv2.GaussianBlur(gray, (3, 3), 0)
+
+        grad_x = cv2.Sobel(gray, cv2.CV_16S, 1, 0, ksize=3, scale=1, delta=0,
+                           borderType=cv2.BORDER_DEFAULT)
+        grad_y = cv2.Sobel(gray, cv2.CV_16S, 0, 1, ksize=3, scale=1, delta=0,
+                           borderType=cv2.BORDER_DEFAULT)
+        abs_grad_x = cv2.convertScaleAbs(grad_x)
+        abs_grad_y = cv2.convertScaleAbs(grad_y)
+
+        gray = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+        gray = np.reshape(gray, gray.shape+(1,))
+
+        return gray
+
+"""
 class CroppingFunPreproc(AbstractFunPreproc):
     name = "CROPPING"
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
@@ -154,6 +184,7 @@ class QuadCEDFunPreproc(AbstractFunPreproc):
 class EnumPreproc(Enum):
     UNCHANGED = UnchangedFunPreproc
     CROPPING = CroppingFunPreproc
+    SOBEL = SobelFunPreproc
 
     QUAD_PURE = QuatPureFunPreproc
     QUAD_GRAY = QuatGrayFunPreproc
