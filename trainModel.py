@@ -14,7 +14,7 @@ from loadData import DataGeneretor, RandomDataGeneretor, DataLoader, attach2Torc
 from buildModel import buildModel
 
 import params
-from EnumPreproc import EnumPreproc
+from modules.preprocess.PreprocessModule import PreprocessEnum
 from utility import PM, bcolors
 
 

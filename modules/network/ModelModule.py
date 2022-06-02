@@ -22,19 +22,19 @@ class ModelFactory():
         pass
 
     @staticmethod
-    def build(typeModel: ModelEnum):
+    def build(typeModel: ModelEnum, device):
         if typeModel == ModelEnum.DeepVONet:
-            model = DeepVONet().to(params.DEVICE)
+            model = DeepVONet().to(device)
         elif typeModel == ModelEnum.DeepVONet_FSM:
-            model = DeepVONet_FSM().to(params.DEVICE)
+            model = DeepVONet_FSM().to(device)
 
         elif typeModel == ModelEnum.SmallDeepVONet:
-            model = SmallDeepVONet().to(params.DEVICE)
+            model = SmallDeepVONet().to(device)
 
         elif typeModel == ModelEnum.QuaternionDeepVONet:
-            model = QuaternionDeepVONet().to(params.DEVICE)
+            model = QuaternionDeepVONet().to(device)
         elif typeModel == ModelEnum.QuaternionDeepVONet_FSM:
-            model = QuaternionDeepVONet_FSM().to(params.DEVICE)
+            model = QuaternionDeepVONet_FSM().to(device)
         else:
             raise ValueError
 

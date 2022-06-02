@@ -11,11 +11,11 @@ class NetworkFactory():
     CriterionEnum = CriterionEnum
     OptimizerEnum = OptimizerEnum
 
-    def build(typeModel: ModelEnum,
+    def build(typeModel: ModelEnum, device,
               typeCriterion: CriterionEnum,
               typeOptimizer: OptimizerEnum):
 
-        model = ModelFactory.build(typeModel)
+        model = ModelFactory.build(typeModel, device)
         criterion = CriterionFactory.build(typeCriterion)
         optimizer = OptimizerFactory.build(typeOptimizer, model)
 
@@ -23,5 +23,9 @@ class NetworkFactory():
         PM.printI(bcolors.LIGHTYELLOW+"model: {}".format(typeModel)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
+
+        for parameter in model.parameters():
+            PM.printD(str(parameter.size()))
+
         return model, criterion, optimizer
 
