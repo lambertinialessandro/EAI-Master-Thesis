@@ -4,17 +4,19 @@ from enum import Enum
 import cv2
 import numpy as np
 from PIL import Image
+"""
 from scipy.ndimage import grey_dilation, grey_erosion
 from skimage.util import img_as_ubyte
 from skimage.morphology import disk
 from skimage.filters.rank import entropy
+"""
 
 from abc import ABC, abstractmethod
 
 from utility import PM
 
 
-class AbstractFunPreproc(ABC):
+class AbstractPreprocess(ABC):
     name = "Abstract"
 
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
@@ -34,8 +36,9 @@ class AbstractFunPreproc(ABC):
 
 
 
-class UnchangedFunPreproc(AbstractFunPreproc):
+class UnchangedPreprocess(AbstractPreprocess):
     name = "UNCHANGED"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -48,8 +51,10 @@ class UnchangedFunPreproc(AbstractFunPreproc):
         im = cv2.resize(im, self.imgSize, self.interpolation);
         return im
 
-class SobelFunPreproc(AbstractFunPreproc):
+
+class SobelPreprocess(AbstractPreprocess):
     name = "SOBEL"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -77,9 +82,10 @@ class SobelFunPreproc(AbstractFunPreproc):
 
         return gray
 
-"""
-class CroppingFunPreproc(AbstractFunPreproc):
+
+class CroppingPreprocess(AbstractPreprocess):
     name = "CROPPING"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -106,9 +112,9 @@ class CroppingFunPreproc(AbstractFunPreproc):
         return im
 
 
-
-class QuatPureFunPreproc(AbstractFunPreproc):
+class QuatPurePreprocess(AbstractPreprocess):
     name = "QUAT_PURE"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -126,8 +132,10 @@ class QuatPureFunPreproc(AbstractFunPreproc):
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
         return quatImg
 
-class QuatGrayFunPreproc(AbstractFunPreproc):
+
+class QuatGrayPreprocess(AbstractPreprocess):
     name = "QUAT_GRAY"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -145,8 +153,10 @@ class QuatGrayFunPreproc(AbstractFunPreproc):
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
         return quatImg
 
-class QuadCEDFunPreproc(AbstractFunPreproc):
+"""
+class QuadCEDPreprocess(AbstractPreprocess):
     name = "QUAT_CED"
+
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
                  interpolation=cv2.INTER_AREA):
         super().__init__(imgSize, imreadFlag, interpolation)
@@ -177,22 +187,22 @@ class QuadCEDFunPreproc(AbstractFunPreproc):
         quatImg = np.concatenate((im_CED, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
         return quatImg
+"""
 
 
 
-# enum class for different types of preprocessing
-class EnumPreproc(Enum):
-    UNCHANGED = UnchangedFunPreproc
-    CROPPING = CroppingFunPreproc
-    SOBEL = SobelFunPreproc
+class PreprocessEnum(Enum):
+    UNCHANGED = UnchangedPreprocess
+    SOBEL = SobelPreprocess
+    CROPPING = CroppingPreprocess
 
-    QUAD_PURE = QuatPureFunPreproc
-    QUAD_GRAY = QuatGrayFunPreproc
-    QUAD_CED = QuadCEDFunPreproc # CANNY_ENTOPY_DILATED
+    QUAD_PURE = QuatPurePreprocess
+    QUAD_GRAY = QuatGrayPreprocess
+    # QUAD_CED = QuadCEDPreprocess # CANNY_ENTOPY_DILATED
 
     def __call__(self, *args, **kargs):
         return self.value(*args, **kargs)
-
+"""
     def listPreproc(imgSize):
         return [EnumPreproc.UNCHANGED(imgSize), EnumPreproc.CROPPING(imgSize)]
     def listQuatPreproc(imgSize):
@@ -200,20 +210,20 @@ class EnumPreproc(Enum):
 
     def listAllPreproc(imgSize):
         return [*EnumPreproc.listPreproc(imgSize), *EnumPreproc.listQuatPreproc(imgSize)]
-
+"""
 
 def main():
     imgPath = "./000000.png"
     imgSize = (256, 256)
 
-    ffs = [EnumPreproc.UNCHANGED,
-           EnumPreproc.CROPPING,
-           EnumPreproc.QUAD_PURE,
-           EnumPreproc.QUAD_GRAY,
-           EnumPreproc.QUAD_CED]
+    ffs = [PreprocessEnum.UNCHANGED,
+           PreprocessEnum.CROPPING,
+           PreprocessEnum.QUAD_PURE,
+           PreprocessEnum.QUAD_GRAY,
+           PreprocessEnum.QUAD_CED]
 
     for ff in ffs:
-        ff = EnumPreproc.UNCHANGED(imgSize)
+        ff = PreprocessEnum.UNCHANGED(imgSize)
         im = ff.processImage(imgPath)
         print(ff.printName())
         print(im.shape)
