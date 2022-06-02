@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 import params
-from EnumPreproc import EnumPreproc
+from modules.preprocess.PreprocessModule import PreprocessEnum
 from utility import PM, bcolors
 
 # TODO
@@ -393,16 +393,11 @@ def attach2Torch(imagesSet, posesSet):
     #print(posesSet.size())
     return imagesSet, posesSet
 
-def DataLoader(datapath, attach=True, suffixType=1, sequence='00'):
+def DataLoader(datapath, attach=True, suffixType="", sequence='00'):
   imgPath = os.path.join(datapath, 'sequences', sequence, 'image_2')
   posesPath = os.path.join(datapath, 'poses', sequence)
 
-  if suffixType==1:
-      suffix = "_{}_{}_loaded.npy".format(params.WIDTH, params.HEIGHT)
-  elif suffixType==2:
-      suffix = "_{}_{}_Quat_loaded.npy".format(params.WIDTH, params.HEIGHT)
-  else:
-      raise ValueError
+  suffix = "_{}_{}_{}_loaded.npy".format(suffixType, params.WIDTH, params.HEIGHT)
 
   imagesSet = loadImages(imgPath, suffix)
   posesSet = loadPoses(posesPath)
@@ -433,7 +428,7 @@ def main():
 
     sequence = "04"
     imageDir = "image_2"
-    prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
+    prepreocF = PreprocessEnum.UNCHANGED((params.WIDTH, params.HEIGHT))
     # prepreocF = EnumPreproc.QUAD_CED((params.WIDTH, params.HEIGHT))
     # prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
 
