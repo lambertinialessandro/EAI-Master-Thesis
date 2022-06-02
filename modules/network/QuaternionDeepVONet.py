@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from quaternionFunctions import QuaternionConv
+from modules.network.quaternionFunctions import QuaternionConv
 from params import DIM_LSTM, HIDDEN_SIZE_LSTM
 
 class QuatC_Block(nn.Module):
