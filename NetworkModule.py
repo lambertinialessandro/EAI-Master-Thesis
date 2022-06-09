@@ -1,9 +1,9 @@
 
 from utility import PM, bcolors
 
-from modules.network.ModelModule import ModelFactory, ModelEnum
-from modules.network.CriterionModule import CriterionFactory, CriterionEnum
-from modules.network.OptimizerModule import OptimizerFactory, OptimizerEnum
+from ModelModule import ModelFactory, ModelEnum
+from CriterionModule import CriterionFactory, CriterionEnum
+from OptimizerModule import OptimizerFactory, OptimizerEnum
 
 
 class NetworkFactory():
@@ -24,8 +24,8 @@ class NetworkFactory():
         PM.printI(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
 
-        for parameter in model.parameters():
-            PM.printD(str(parameter.size()))
+        # for parameter in model.parameters():
+        #     PM.printD(str(parameter.size()))
 
         return model, criterion, optimizer
 

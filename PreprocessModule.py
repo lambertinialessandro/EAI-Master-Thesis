@@ -78,7 +78,7 @@ class SobelPreprocess(AbstractPreprocess):
         abs_grad_y = cv2.convertScaleAbs(grad_y)
 
         gray = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
-        gray = np.reshape(gray, gray.shape+(1,))
+        gray = np.reshape(gray, gray.shape + (1,))
 
         return gray
 

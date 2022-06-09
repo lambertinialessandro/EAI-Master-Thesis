@@ -29,18 +29,20 @@ class SmallDeepVONet(nn.Module):
 
     def __init__(self):
         super(SmallDeepVONet, self).__init__()
+        # 6, 64, 128, 256, 512, 512, 1024
+        # 2, 24,  48,  96, 192, 192, 384
 
-        self.block1 = C_Block(6, 64, kernel_size=(7, 7), stride=(2, 2),
+        self.block1 = C_Block(2, 24, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
-        self.block2 = C_Block (64, 128, kernel_size=(5, 5), stride=(2, 2),
+        self.block2 = C_Block (24, 48, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block3 = C_Block (128, 256, kernel_size=(5, 5), stride=(2, 2),
+        self.block3 = C_Block (48, 96, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block4 = C_Block (256, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block4 = C_Block (96, 192, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block5 = C_Block (512, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block5 = C_Block (192, 192, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block6 = C_Block (512, 1024, kernel_size=(3, 3), stride=(2, 2),
+        self.block6 = C_Block (192, 384, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
 
         self.flatten = nn.Flatten()

@@ -3,9 +3,9 @@ from enum import Enum
 
 import params
 
-from modules.network.DeepVONet import DeepVONet, DeepVONet_FSM
-from modules.network.SmallDeepVONet import SmallDeepVONet
-from modules.network.QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
+from DeepVONet import DeepVONet, DeepVONet_FSM
+from SmallDeepVONet import SmallDeepVONet
+from QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
 
 
 class ModelEnum(Enum):
