@@ -2,8 +2,31 @@
 import matplotlib.pyplot as plt
 from IPython.display import HTML, display
 
-from params import FLAG_DEBUG_PRINT, FLAG_INFO_PRINT
+from params import FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, FLAG_OUT_HTML
 
+
+class STDOUT_holder:
+    def __init__(self, value, max_v, *args, **kargs):
+        super().__init__(*args, **kargs)
+        self.max_v = max_v
+        self.length = 40
+
+        percent = ("{0:." + str(2) + "f}").format(100 * (value / float(self.max_v)))
+        filledLength = int(self.length * value // self.max_v)
+        bar = '█' * filledLength + '-' * (self.length - filledLength)
+        print(f'\r### Info Progress:|{bar}| {percent}% Complete', end='\r')
+        # Print New Line on Complete
+        if value == self.max_v:
+            print()
+
+    def update(self, value):
+        percent = ("{0:." + str(2) + "f}").format(100 * (value / float(self.max_v)))
+        filledLength = int(self.length * value // self.max_v)
+        bar = '█' * filledLength + '-' * (self.length - filledLength)
+        print(f'\r### Info Progress:|{bar}| {percent}% Complete', end='\r')
+        # Print New Line on Complete
+        if value == self.max_v:
+            print()
 
 class HTML_holder:
     def __init__(self, value, max_v, *args, **kargs):
@@ -19,9 +42,10 @@ class HTML_holder:
                  {value}</progress>"))
 
 class PrintManager:
-    def __init__(self, FLAG_DEBUG_PRINT=False, FLAG_INFO_PRINT=False):
+    def __init__(self, FLAG_DEBUG_PRINT=False, FLAG_INFO_PRINT=False, FLAG_OUT_HTML=False):
         self.FLAG_DEBUG_PRINT = FLAG_DEBUG_PRINT
         self.FLAG_INFO_PRINT = FLAG_INFO_PRINT
+        self.FLAG_OUT_HTML = FLAG_OUT_HTML
 
     # Debug
     def printD(self, msg, head=""):
@@ -34,20 +58,12 @@ class PrintManager:
         plt.imshow(img)
         plt.show()
 
-    # Print iterations progress
-    def printProgressBarI (self, iteration, total, length = 40):
+    def printProgressBarI(self, value, max_v):
         if self.FLAG_INFO_PRINT:
-            percent = ("{0:." + str(2) + "f}").format(100 * (iteration / float(total)))
-            filledLength = int(length * iteration // total)
-            bar = '█' * filledLength + '-' * (length - filledLength)
-            print(f'\r### Info Progress:|{bar}| {percent}% Complete', end='\r')
-            # Print New Line on Complete
-            if iteration == total:
-                print()
-
-    def HTMLProgressBarI(self, value, max_v):
-        if self.FLAG_INFO_PRINT:
-            return HTML_holder(value, max_v)
+            if self.FLAG_OUT_HTML:
+                return HTML_holder(value, max_v)
+            else:
+                return STDOUT_holder(value, max_v)
 
     # Info
     def printI(self, msg, head=""):
@@ -74,7 +90,7 @@ class bcolors:
 
     ENDC = '\x1b[0m'
 
-PM = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT)
+PM = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, FLAG_OUT_HTML)
 
 
 # Testing
@@ -83,22 +99,17 @@ def main():
 
     FLAG_DEBUG_PRINT = True
     FLAG_INFO_PRINT = True
+    FLAG_OUT_HTML = False
 
-    pm = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT)
+    pm = PrintManager(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, FLAG_OUT_HTML)
 
     pm.printD(bcolors.LIGHTGREEN+"ciao"+bcolors.ENDC)
     pm.printI(bcolors.DARKGREEN+"ciao"+bcolors.ENDC)
 
+    pb = pm.printProgressBarI(0, 5-1)
     for i in range(5):
-        pm.printProgressBarI(i, 5)
+        pb.update(i)
         time.sleep(0.3)
-    pm.printProgressBarI(5, 5)
-
-    # working on colab
-    progress = pm.HTMLProgressBarI(0, 5-1)
-    for i in range(5):
-        progress.update(i)
-        time.sleep(0.2)
 
 if __name__ == "__main__":
     main()
