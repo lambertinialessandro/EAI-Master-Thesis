@@ -12,11 +12,15 @@ import torch
 FLAG_DOWNLOAD_DATASET = False #@param {type:"boolean"}
 FLAG_DEBUG_PRINT = True #@param {type:"boolean"}
 FLAG_INFO_PRINT = True #@param {type:"boolean"}
+FLAG_OUT_HTML = False #@param {type:"boolean"}
 
 #@markdown ---
 #@markdown ### Files path:
 # global variables to save the tables/models
 dir_main = '.'#@param {type:"string"}
+
+dir_main = 'drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/'#@param {type:"string"}
+FLAG_OUT_HTML = True #@param {type:"boolean"}
 
 dir_Dataset = 'Dataset'#@param {type:"string"}
 dir_Dataset = os.path.join(dir_main, dir_Dataset)
@@ -30,6 +34,7 @@ dir_History = os.path.join(dir_main, dir_History)
 
 #@markdown ---
 #@markdown ### Model settings:
+    # TODO
 typeModel = "DeepVONet" #@param ["DeepVONet", "DeepVONet_FSM",
                         #        "QuaternionDeepVONet", "QuaternionDeepVONet_FSM"] {type:"string"}
 typeCriterion = "MSELoss" #@param ["MSELoss"] {type:"string"}
@@ -40,16 +45,17 @@ typeOptimizer = "Adam" #@param ["Adam", "SGD"] {type:"string"}
 BACH_SIZE = 10 #@param {type:"number"}
 
 if typeModel == "DeepVONet":
-    CHANNELS = 6
-    suffixType = 1
+    CHANNELS = 2 # 6
 elif typeModel == "QuaternionDeepVONet":
     CHANNELS = 8
-    suffixType = 2
 else:
     raise ValueError
 
+    # TODO
+suffixType = "SOBEL" # UNCHANGED, SOBEL, CROPPING, QUAT_PURE, QUAT_GRAY, QUAT_CED
+
 BACH_SIZE = 10 #@param {type:"number"}
-NUM_BACH = 1 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
+NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
 RDG_ITER = 1 #@param {type:"number"}
 STEP = 5 #@param {type:"number"}
 
@@ -59,7 +65,7 @@ STEP = 5 #@param {type:"number"}
 
 __dim_image = 1
 if __dim_image == 1:
-    DIM_LSTM = 10240 # = 1024 * 10
+    DIM_LSTM = 3840 # 3840 = 384 * 10        10240 # = 1024 * 10
     WIDTH = 320
     HEIGHT = 96
 
@@ -80,7 +86,7 @@ HIDDEN_SIZE_LSTM = 1000
 
 NUM_POSES = 6
 
-img_size = (320, 96) # (1280,384) # (640, 192) # (320, 96)
+img_size = (WIDTH, HEIGHT) # (1280,384) # (640, 192) # (320, 96)
 
 trainingSeries = ["00", "01", "02", "08", "09"] # added 01
 testingSeries = ["03", "04", "05", "06", "07", "10"]
@@ -90,6 +96,30 @@ if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
 else:
     DEVICE = torch.device("cpu")
+
+
+
+
+FLAG_LOAD = True #@param {type:"boolean"}
+FLAG_SAVE_LOG = True #@param {type:"boolean"}
+SAVE_STEP = 35 #@param {type:"number"}
+FLAG_SAVE = True #@param {type:"boolean"}
+
+BASE_EPOCH = 19 #@param {type:"number"} # 1 starting epoch
+NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"number"} # 10 how many epoch
+
+fileNameFormat = "medium"
+
+prefixFileNameLoad = "DeepVO_epoch_"
+suffixFileNameLoad = "medium[11-18]" #@param {type:"string"}
+
+prefixFileNameLosses = "loss_"
+suffixFileNameLosses = "{}[{}]"
+
+prefixFileNameSave = "DeepVO_epoch_"
+suffixFileNameSave = "{}[{}-{}]"
+
+type_train = "preprocessed"
 
 
 
