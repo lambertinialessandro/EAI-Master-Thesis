@@ -1,6 +1,7 @@
 
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+from enum import Enum
 
 import gc
 import time
@@ -10,15 +11,17 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from loadData import DataGeneretor, RandomDataGeneretor, DataLoader, attach2Torch
-from buildModel import buildModel
+from loadData import DataGeneretorOnline, RandomDataGeneretor, DataGeneretorPreprocessed, \
+    DataLoader, attach2Torch
 
 import params
-from modules.preprocess.PreprocessModule import PreprocessEnum
+from PreprocessModule import PreprocessEnum
 from utility import PM, bcolors
 
 
-def trainEpochPreprocessed():
+def trainEpochPreprocessed(model, criterion, optimizer):
+    imageDir = "image_2"
+
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
@@ -26,75 +29,44 @@ def trainEpochPreprocessed():
     model.training = True
 
     train_initT = time.time()
-    for sequence in params.trainingSeries:
-        PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        X, y = DataLoader(params.dir_Dataset, attach=False, suffixType=params.suffixType, sequence=sequence)
-        train_numOfBatch = int(len(X)/params.BACH_SIZE)-1
-        outputs = []
+    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, 1, suffixType=params.suffixType, attach=True)
+    train_numOfBatch = rdg.maxIters-1
+    PB = PM.printProgressBarI(0, train_numOfBatch)
+    outputs = []
 
-        for i in range(train_numOfBatch):
-            inputs, labels = attach2Torch(
-                    X[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE],
-                    y[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE]
-                )
+    for inputs, labels, pos, seq, nb in rdg:
+        for i in range(nb):
+            torch.cuda.empty_cache()
 
             model.zero_grad()
 
-            app_outputs = model(inputs[0])
-            if params.DEVICE.type == 'cuda':
-                outputs.append(app_outputs.cpu().detach().numpy())
-            else:
-                outputs.append(app_outputs.detach().numpy())
+            outputs = model(inputs[i])
 
-            totLoss = criterion(app_outputs, labels[0])
-            poseLoss = criterion(app_outputs[0:3], labels[0][0:3]).item()
-            rotLoss = criterion(app_outputs[3:6], labels[0][3:6]).item()
+            totLoss = criterion(outputs, labels[i])
+            poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+            rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
 
             totLoss.backward()
             optimizer.step()
 
-            loss_train[sequence]["tot"].append(totLoss.item())
-            loss_train[sequence]["pose"].append(poseLoss)
-            loss_train[sequence]["rot"].append(rotLoss)
-            PM.printProgressBarI(i, train_numOfBatch)
+            loss_train[seq[i]]["tot"].append(totLoss.item())
+            loss_train[seq[i]]["pose"].append(poseLoss)
+            loss_train[seq[i]]["rot"].append(rotLoss)
+        del inputs, labels, totLoss, poseLoss, rotLoss
+        gc.collect()
+        torch.cuda.empty_cache()
+        PB.update(pos)
+    del rdg
+    gc.collect()
+    torch.cuda.empty_cache()
 
-            del inputs, labels, app_outputs, totLoss, poseLoss, rotLoss
-            gc.collect()
-            torch.cuda.empty_cache()
-        PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[sequence]["tot"]),
-            np.mean(loss_train[sequence]["pose"]),
-            np.mean(loss_train[sequence]["rot"])
+    for s in params.trainingSeries:
+        PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[s]["tot"]),
+            np.mean(loss_train[s]["pose"]),
+            np.mean(loss_train[s]["rot"])
             ))
-        del X
-        gc.collect()
-        torch.cuda.empty_cache()
 
-        pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
-        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
-        for i in range(0, len(outputs)):
-          for j in range(0, params.BACH_SIZE):
-            pos = i*params.BACH_SIZE+j
-            pts_yTrain = np.append(pts_yTrain, [pts_yTrain[pos] + y[pos]], axis=0)
-            pts_out = np.append(pts_out, [pts_out[pos] + outputs[i][j]], axis=0)
-
-        del outputs, y
-        gc.collect()
-        torch.cuda.empty_cache()
-
-        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
-        plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
-
-        ax = plt.axes(projection='3d')
-        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
-        ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
-        del pts_yTrain, pts_out
-        gc.collect()
-        torch.cuda.empty_cache()
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
             [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
@@ -110,7 +82,7 @@ def trainEpochPreprocessed():
 
     return loss_train, train_elapsedT
 
-def testEpochPreprocessed():
+def testEpochPreprocessed(model, criterion, optimizer):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -122,6 +94,7 @@ def testEpochPreprocessed():
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         X, y = DataLoader(params.dir_Dataset, attach=False, suffixType=params.suffixType, sequence=sequence)
         test_numOfBatch = int(len(X)/params.BACH_SIZE)-1
+        PB = PM.printProgressBarI(0, test_numOfBatch)
         outputs = []
 
         for i in range(test_numOfBatch):
@@ -145,7 +118,7 @@ def testEpochPreprocessed():
             loss_test[sequence]["tot"].append(totLoss)
             loss_test[sequence]["pose"].append(poseLoss)
             loss_test[sequence]["rot"].append(rotLoss)
-            PM.printProgressBarI(i, test_numOfBatch)
+            PB.update(i)
 
             del inputs, labels, app_outputs, totLoss, poseLoss, rotLoss
             gc.collect()
@@ -204,7 +177,7 @@ def testEpochPreprocessed():
 
 
 
-def trainEpoch(imageDir, prepreocF):
+def trainEpoch(model, criterion, optimizer, imageDir, prepreocF):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
@@ -214,8 +187,9 @@ def trainEpoch(imageDir, prepreocF):
     train_initT = time.time()
     for sequence in params.trainingSeries:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        dg = DataGeneretor(sequence, imageDir, prepreocF, attach=True)
-        train_numOfBatch = dg.numBatchImgs
+        dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
+        train_numOfBatch = dg.numBatchImgs - 1
+        PB = PM.printProgressBarI(0, train_numOfBatch)
         outputs = []
         pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
         pts_out = np.array([[0, 0, 0, 0, 0, 0]])
@@ -251,7 +225,7 @@ def trainEpoch(imageDir, prepreocF):
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
-            PM.printProgressBarI(i, train_numOfBatch)
+            PB.update(i)
         del dg
         gc.collect()
         torch.cuda.empty_cache()
@@ -290,7 +264,7 @@ def trainEpoch(imageDir, prepreocF):
 
     return loss_train, train_elapsedT
 
-def testEpoch(imageDir, prepreocF):
+def testEpoch(model, criterion, optimizer, imageDir, prepreocF):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -300,8 +274,9 @@ def testEpoch(imageDir, prepreocF):
     test_initT = time.time()
     for sequence in params.testingSeries:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        dg = DataGeneretor(sequence, imageDir, prepreocF, attach=True)
+        dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
         test_numOfBatch = dg.numBatchImgs - 1
+        PB = PM.printProgressBarI(0, test_numOfBatch)
 
         pts_yTest = np.array([[0, 0, 0, 0, 0, 0]])
         pts_out = np.array([[0, 0, 0, 0, 0, 0]])
@@ -331,7 +306,7 @@ def testEpoch(imageDir, prepreocF):
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
-            PM.printProgressBarI(pos, test_numOfBatch)
+            PB.update(pos)
         del dg
         gc.collect()
         torch.cuda.empty_cache()
@@ -373,7 +348,7 @@ def testEpoch(imageDir, prepreocF):
 
 
 
-def trainEpochRandom(imageDir, prepreocF):
+def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
@@ -385,7 +360,7 @@ def trainEpochRandom(imageDir, prepreocF):
     dataGens = []
     outDisps = []
     for s in params.trainingSeries:
-        dataGens.append(DataGeneretor(s, imageDir, prepreocF, attach=True))
+        dataGens.append(DataGeneretorOnline(prepreocF, s, imageDir, attach=True))
         PM.printI(bcolors.LIGHTGREEN+f"sequence: {s}"+bcolors.ENDC)
         outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
 
@@ -445,7 +420,7 @@ def trainEpochRandom(imageDir, prepreocF):
 
 
 
-def trainEpochRandom_RDG(imageDir, prepreocF):
+def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
@@ -453,8 +428,9 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
     model.training = True
 
     train_initT = time.time()
-    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, prepreocF, attach=True)
+    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, 2, prepreocF=prepreocF, attach=True)
     train_numOfBatch = rdg.maxIters-1
+    PB = PM.printProgressBarI(0, train_numOfBatch)
     outputs = []
 
     for inputs, labels, pos, seq, nb in rdg:
@@ -478,7 +454,7 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
         del inputs, labels, totLoss, poseLoss, rotLoss
         gc.collect()
         torch.cuda.empty_cache()
-        PM.printProgressBarI(pos, train_numOfBatch)
+        PB.update(pos)
     del rdg
     gc.collect()
     torch.cuda.empty_cache()
@@ -507,158 +483,173 @@ def trainEpochRandom_RDG(imageDir, prepreocF):
     return loss_train, train_elapsedT
 
 
-
-FLAG_LOAD = False #@param {type:"boolean"}
-FLAG_SAVE_LOG = True #@param {type:"boolean"}
-SAVE_STEP = 35 #@param {type:"number"}
-FLAG_SAVE = True #@param {type:"boolean"}
-
-BASE_EPOCH = 1 #@param {type:"number"} # 1 starting epoch
-NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"number"} # 10 how many epoch
-PM.printD(f"[{BASE_EPOCH}-{BASE_EPOCH+NUM_EPOCHS-1}]\n")
-
-fileNameFormat = "medium"
-
-prefixFileNameLoad = "DeepVO_epoch_"
-suffixFileNameLoad = "medium[1-2]" #@param {type:"string"}
-
-prefixFileNameLosses = "loss_"
-suffixFileNameLosses = "{}[{}]"
-
-prefixFileNameSave = "DeepVO_epoch_"
-suffixFileNameSave = "{}[{}-{}]"
-
-imageDir = "image_2"
-prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
-type_train = "online_random_RDG" # online, preprocessed, online_random, online_random_RDG
+class enumTrain(Enum):
+    online = "online"
+    preprocessed = "preprocessed"
+    online_random = "online_random"
+    online_random_RDG = "online_random_RDG"
 
 
-try:
-  del model, criterion, optimizer
-  gc.collect()
-  torch.cuda.empty_cache()
-except NameError:
-  pass
+def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train):
+    # Load the model
+    if params.FLAG_LOAD:
+        fileName = os.path.join(params.dir_Model,
+                                f"{params.prefixFileNameLoad}{params.suffixFileNameLoad}.pt")
+        checkpoint = torch.load(fileName)
 
-model, criterion, optimizer = buildModel(typeModel=params.typeModel,
-                                        typeCriterion=params.typeCriterion,
-                                        typeOptimizer=params.typeOptimizer)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-# Load the model
-if FLAG_LOAD:
-    fileName = os.path.join(params.dir_Model, f"{prefixFileNameLoad}{suffixFileNameLoad}.pt")
-    checkpoint = torch.load(fileName)
-
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-    PM.printI(bcolors.LIGHTGREEN+"Loaded {}\n".format(fileName)+bcolors.ENDC)
-else:
-    PM.printI(bcolors.LIGHTRED+"Model not Loaded\n"+bcolors.ENDC)
-
-
-
-loss_train_epochs = {"tot":[], "pose":[], "rot":[]}
-loss_test_epochs = {"tot":[], "pose":[], "rot":[]}
-for epoch in range(BASE_EPOCH, BASE_EPOCH+NUM_EPOCHS):
-    PM.printI(bcolors.LIGHTRED+"EPOCH {}/{}\n".format(epoch, BASE_EPOCH+NUM_EPOCHS-1)+bcolors.ENDC)
-
-
-    # Train the model
-    if type_train == "online":
-        loss_train, train_elapsedT = trainEpoch(imageDir, prepreocF)
-    elif type_train == "preprocessed":
-        loss_train, train_elapsedT = trainEpochPreprocessed()
-    elif type_train == "online_random":
-        loss_train, train_elapsedT = trainEpochRandom(imageDir, prepreocF)
-    elif type_train == "online_random_RDG":
-        loss_train, train_elapsedT = trainEpochRandom_RDG(imageDir, prepreocF)
+        PM.printI(bcolors.LIGHTGREEN+"Loaded {}\n".format(fileName)+bcolors.ENDC)
     else:
-        raise NotImplementedError
+        PM.printI(bcolors.LIGHTRED+"Model not Loaded\n"+bcolors.ENDC)
 
 
-    # Save the log file
-    if FLAG_SAVE_LOG:
-        suffix = suffixFileNameLosses.format(fileNameFormat, epoch)
-        fileName = os.path.join(params.dir_History, f"{prefixFileNameLosses}{suffix}.txt")
-        with open(fileName, "w") as f:
-            f.write("{}\n".format(str(loss_train)))
-        PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
-    else:
-        PM.printD(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
+
+    loss_train_epochs = {"tot":[], "pose":[], "rot":[]}
+    loss_test_epochs = {"tot":[], "pose":[], "rot":[]}
+    for epoch in range(params.BASE_EPOCH, params.BASE_EPOCH + params.NUM_EPOCHS):
+        PM.printI(bcolors.LIGHTRED+"EPOCH {}/{}\n".format(epoch, params.BASE_EPOCH+params.NUM_EPOCHS-1)+bcolors.ENDC)
 
 
-    # Save the model
-    if FLAG_SAVE:
-        suffix = suffixFileNameSave.format(fileNameFormat, BASE_EPOCH, epoch)
-        fileName = os.path.join(params.dir_Model, f"{prefixFileNameSave}{suffix}.pt")
-        torch.save({
-                  'model_state_dict': model.state_dict(),
-                  'optimizer_state_dict': optimizer.state_dict(),
-                  }, fileName)
-        PM.printI(bcolors.LIGHTGREEN+"Saved {}\n".format(fileName)+bcolors.ENDC)
-
-        if (epoch-BASE_EPOCH) % SAVE_STEP != 0:
-            suffix = suffixFileNameSave.format(fileNameFormat, BASE_EPOCH, epoch-1)
-            fileName = os.path.join(params.dir_Model, f"{prefixFileNameSave}{suffix}.pt")
-            os.remove(fileName)
-            PM.printI(bcolors.LIGHTRED+"Removed {}\n".format(fileName)+bcolors.ENDC)
-    else:
-        PM.printI(bcolors.LIGHTRED+"Model not Saved\n"+bcolors.ENDC)
+        # Train the model
+        if type_train == enumTrain.online:
+            loss_train, train_elapsedT = trainEpoch(model, criterion, optimizer, imageDir, prepreocF)
+        elif type_train == enumTrain.preprocessed:
+            loss_train, train_elapsedT = trainEpochPreprocessed(model, criterion, optimizer)
+        elif type_train == enumTrain.online_random:
+            loss_train, train_elapsedT = trainEpochRandom(model, criterion, optimizer,
+                                                          imageDir, prepreocF)
+        elif type_train == enumTrain.online_random_RDG:
+            loss_train, train_elapsedT = trainEpochRandom_RDG(model, criterion, optimizer,
+                                                              imageDir, prepreocF)
+        else:
+            raise NotImplementedError
 
 
-    # Test the model
-    if type_train == "online" or type_train == "online_random" or type_train == "online_random_RDG":
-        loss_test, test_elapsedT = testEpoch(imageDir, prepreocF)
-    elif type_train == "preprocessed":
-        loss_test, test_elapsedT = testEpochPreprocessed()
-    else:
-        raise NotImplementedError
+        # Save the log file
+        if params.FLAG_SAVE_LOG:
+            suffix = params.suffixFileNameLosses.format(params.fileNameFormat, epoch)
+            fileName = os.path.join(params.dir_History,
+                                    f"{params.prefixFileNameLosses}{suffix}.txt")
+            with open(fileName, "w") as f:
+                f.write("{}\n".format(str(loss_train)))
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
+        else:
+            PM.printD(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
 
-    # Save the log file
-    if FLAG_SAVE_LOG:
-        suffix = suffixFileNameLosses.format(fileNameFormat, epoch)
-        fileName = os.path.join(params.dir_History, f"{prefixFileNameLosses}{suffix}.txt")
-        with open(fileName, "a") as f:
-            f.write("{}\n".format(str(loss_test)))
-        PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
-    else:
-        PM.printI(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
+        # Save the model
+        if params.FLAG_SAVE:
+            suffix = params.suffixFileNameSave.format(params.fileNameFormat, params.BASE_EPOCH, epoch)
+            fileName = os.path.join(params.dir_Model,
+                                    f"{params.prefixFileNameSave}{suffix}.pt")
+            torch.save({
+                      'model_state_dict': model.state_dict(),
+                      'optimizer_state_dict': optimizer.state_dict(),
+                      }, fileName)
+            PM.printI(bcolors.LIGHTGREEN+"Saved {}\n".format(fileName)+bcolors.ENDC)
+
+            if (epoch-params.BASE_EPOCH) % params.SAVE_STEP != 0:
+                suffix = params.suffixFileNameSave.format(params.fileNameFormat, params.BASE_EPOCH, epoch-1)
+                fileName = os.path.join(params.dir_Model,
+                                        f"{params.prefixFileNameSave}{suffix}.pt")
+                os.remove(fileName)
+                PM.printI(bcolors.LIGHTRED+"Removed {}\n".format(fileName)+bcolors.ENDC)
+        else:
+            PM.printI(bcolors.LIGHTRED+"Model not Saved\n"+bcolors.ENDC)
 
 
-    # Epoch summary and plot
-    PM.printI("epoch %d"%(epoch), head="\n")
-    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
-    PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs\n"%(
-        loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT))
-
-    for k in loss_train_epochs.keys():
-        loss_train_epochs[k].append(loss_train["tot"][k])
-        loss_test_epochs[k].append(loss_test["tot"][k])
-
-    del loss_train, loss_test
-    gc.collect()
-    torch.cuda.empty_cache()
+        # Test the model
+        if type_train == enumTrain.online or \
+                type_train == enumTrain.online_random or \
+                type_train == enumTrain.online_random_RDG:
+            loss_test, test_elapsedT = testEpoch(model, criterion, optimizer, imageDir, prepreocF)
+        elif type_train == enumTrain.preprocessed:
+            loss_test, test_elapsedT = testEpochPreprocessed(model, criterion, optimizer)
+        else:
+            raise NotImplementedError
 
 
-    dimX = len(loss_train_epochs['tot'])
-    x = np.linspace(1, dimX, dimX)
-    plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(x, loss_train_epochs['tot'], color='red')
-    plt.plot(x, loss_train_epochs['pose'], color='blue')
-    plt.plot(x, loss_train_epochs['rot'], color='green')
-    plt.legend(['total loss', 'position loss', 'rotation loss'])
-    plt.show()
+        # Save the log file
+        if params.FLAG_SAVE_LOG:
+            suffix = params.suffixFileNameLosses.format(params.fileNameFormat, epoch)
+            fileName = os.path.join(params.dir_History,
+                                    f"{params.prefixFileNameLosses}{suffix}.txt")
+            with open(fileName, "a") as f:
+                f.write("{}\n".format(str(loss_test)))
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
+        else:
+            PM.printI(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
-    dimX = len(loss_test_epochs['tot'])
-    x = np.linspace(1, dimX, dimX)
-    plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(x, loss_test_epochs['tot'], color='red')
-    plt.plot(x, loss_test_epochs['pose'], color='blue')
-    plt.plot(x, loss_test_epochs['rot'], color='green')
-    plt.legend(['total loss', 'position loss', 'rotation loss'])
-    plt.show()
+
+        # Epoch summary and plot
+        PM.printI("epoch %d"%(epoch), head="\n")
+        PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+            loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+        PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs\n"%(
+            loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT))
+
+        for k in loss_train_epochs.keys():
+            loss_train_epochs[k].append(loss_train["tot"][k])
+            loss_test_epochs[k].append(loss_test["tot"][k])
+
+        del loss_train, loss_test
+        gc.collect()
+        torch.cuda.empty_cache()
+
+
+        dimX = len(loss_train_epochs['tot'])
+        x = np.linspace(1, dimX, dimX)
+        plt.figure(figsize=(8, 6), dpi=80)
+        plt.plot(x, loss_train_epochs['tot'], color='red')
+        plt.plot(x, loss_train_epochs['pose'], color='blue')
+        plt.plot(x, loss_train_epochs['rot'], color='green')
+        plt.legend(['total loss', 'position loss', 'rotation loss'])
+        plt.show()
+
+        dimX = len(loss_test_epochs['tot'])
+        x = np.linspace(1, dimX, dimX)
+        plt.figure(figsize=(8, 6), dpi=80)
+        plt.plot(x, loss_test_epochs['tot'], color='red')
+        plt.plot(x, loss_test_epochs['pose'], color='blue')
+        plt.plot(x, loss_test_epochs['rot'], color='green')
+        plt.legend(['total loss', 'position loss', 'rotation loss'])
+        plt.show()
+
+
+
+def main():
+    from NetworkModule import NetworkFactory
+
+    imageDir = "image_2"
+    prepreocF = PreprocessEnum.SOBEL((params.WIDTH, params.HEIGHT)) # UNCHANGED SOBEL
+
+    PM.printD(f"[{params.BASE_EPOCH}-{params.BASE_EPOCH + params.NUM_EPOCHS-1}]\n")
+
+    try:
+        del model, criterion, optimizer
+        gc.collect()
+        torch.cuda.empty_cache()
+    except NameError:
+        pass
+
+    typeModel = NetworkFactory.ModelEnum.SmallDeepVONet # DeepVONet, SmallDeepVONet
+    typeCriterion = NetworkFactory.CriterionEnum.MSELoss
+    typeOptimizer = NetworkFactory.OptimizerEnum.Adam
+
+    model, criterion, optimizer = \
+        NetworkFactory.build(typeModel, params.DEVICE,
+                             typeCriterion,
+                             typeOptimizer)
+
+    type_train = enumTrain.preprocessed # preprocessed  online_random_RDG
+
+    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
+
+
+
+if __name__ == "__main__":
+    main()
 
 
