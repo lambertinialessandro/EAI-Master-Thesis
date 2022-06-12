@@ -24,9 +24,6 @@ class C_Block(nn.Module):
 
 
 class SmallDeepVONet(nn.Module):
-    dimLSTM = params.DIM_LSTM
-    hidden_size = params.HIDDEN_SIZE_LSTM
-
     def __init__(self):
         super(SmallDeepVONet, self).__init__()
         # 6, 64, 128, 256, 512, 512, 1024
@@ -47,6 +44,8 @@ class SmallDeepVONet(nn.Module):
 
         self.flatten = nn.Flatten()
 
+        self.dimLSTM = params.DIM_LSTM
+        self.hidden_size = params.HIDDEN_SIZE_LSTM
         self.lstm = nn.LSTM(input_size=self.dimLSTM, hidden_size=self.hidden_size,
                             num_layers=2, dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)

@@ -3,13 +3,15 @@ import torch
 import torch.nn as nn
 
 from quaternionFunctions import QuaternionConv
-from params import DIM_LSTM, HIDDEN_SIZE_LSTM
+import params
+
 
 class QuatC_Block(nn.Module):
   def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
     super(QuatC_Block, self).__init__()
 
-    self.conv = QuaternionConv(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding)
+    self.conv = QuaternionConv(in_ch, out_ch, kernel_size=kernel_size, stride=stride,
+                               padding=padding)
     self.relu = nn.ReLU(inplace=True)
     self.batch = nn.BatchNorm2d(out_ch)
     self.drop = nn.Dropout(dropout_rate)
@@ -20,6 +22,7 @@ class QuatC_Block(nn.Module):
     x = self.batch(x)
     x = self.drop(x)
     return x
+
 
 class QuaternionDeepVONet(nn.Module):
     def __init__(self):
@@ -46,8 +49,8 @@ class QuaternionDeepVONet(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.dimLSTM = DIM_LSTM
-        self.hidden_size = HIDDEN_SIZE_LSTM
+        self.dimLSTM = params.DIM_LSTM
+        self.hidden_size = params.HIDDEN_SIZE_LSTM
         self.lstm = nn.LSTM(input_size=self.dimLSTM, hidden_size=self.hidden_size, num_layers=2,
                             dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
@@ -80,6 +83,7 @@ class LambdaLayer(nn.Module):
     self.lambd = lambd
   def forward(self, x):
     return self.lambd(x)
+
 
 class FSM(nn.Module):
   def __init__(self, debug=False):
@@ -177,6 +181,7 @@ class FSM(nn.Module):
 
     return out
 
+
 class QuaternionDeepVONet_FSM(nn.Module):
     def __init__(self):
         super(QuaternionDeepVONet_FSM, self).__init__()
@@ -203,8 +208,8 @@ class QuaternionDeepVONet_FSM(nn.Module):
         self.fsm_block = FSM()
         self.flatten = nn.Flatten()
 
-        self.dimLSTM = DIM_LSTM
-        self.hidden_size = HIDDEN_SIZE_LSTM
+        self.dimLSTM = params.DIM_LSTM
+        self.hidden_size = params.HIDDEN_SIZE_LSTM
         self.lstm = nn.LSTM(input_size=self.dimLSTM, hidden_size=self.hidden_size, num_layers=2,
                             dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
