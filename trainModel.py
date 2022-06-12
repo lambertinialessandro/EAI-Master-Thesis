@@ -19,17 +19,17 @@ from PreprocessModule import PreprocessEnum
 from utility import PM, bcolors
 
 
-def trainEpochPreprocessed(model, criterion, optimizer):
+def trainEpochPreprocessed(model, criterion, optimizer, sequences=params.trainingSeries):
     imageDir = "image_2"
 
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
     model.train()
     model.training = True
 
     train_initT = time.time()
-    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, 1, suffixType=params.suffixType, attach=True)
+    rdg = RandomDataGeneretor(sequences, imageDir, 1, suffixType=params.suffixType, attach=True)
     train_numOfBatch = rdg.maxIters-1
     PB = PM.printProgressBarI(0, train_numOfBatch)
     outputs = []
@@ -60,7 +60,7 @@ def trainEpochPreprocessed(model, criterion, optimizer):
     gc.collect()
     torch.cuda.empty_cache()
 
-    for s in params.trainingSeries:
+    for s in sequences:
         PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
             np.mean(loss_train[s]["tot"]),
             np.mean(loss_train[s]["pose"]),
@@ -69,28 +69,28 @@ def trainEpochPreprocessed(model, criterion, optimizer):
 
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
-            [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+            [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
 
     return loss_train, train_elapsedT
 
-def testEpochPreprocessed(model, criterion, optimizer):
-    loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
+def testEpochPreprocessed(model, criterion, optimizer, sequences=params.testingSeries):
+    loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
     model.eval()
     model.training = False
 
     test_initT = time.time()
-    for sequence in params.testingSeries:
+    for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         X, y = DataLoader(params.dir_Dataset, attach=False, suffixType=params.suffixType, sequence=sequence)
         test_numOfBatch = int(len(X)/params.BACH_SIZE)-1
@@ -162,14 +162,14 @@ def testEpochPreprocessed(model, criterion, optimizer):
         torch.cuda.empty_cache()
     test_elapsedT = time.time() - test_initT
     loss_test["tot"]["tot"].append(sum(
-        [np.mean(loss_test[seq]["tot"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_test["tot"]["pose"].append(sum(
-        [np.mean(loss_test[seq]["pose"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_test["tot"]["rot"].append(sum(
-        [np.mean(loss_test[seq]["rot"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT))
 
@@ -177,15 +177,15 @@ def testEpochPreprocessed(model, criterion, optimizer):
 
 
 
-def trainEpoch(model, criterion, optimizer, imageDir, prepreocF):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+def trainEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
     model.train()
     model.training = True
 
     train_initT = time.time()
-    for sequence in params.trainingSeries:
+    for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
         train_numOfBatch = dg.numBatchImgs - 1
@@ -251,28 +251,28 @@ def trainEpoch(model, criterion, optimizer, imageDir, prepreocF):
         torch.cuda.empty_cache()
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
 
     return loss_train, train_elapsedT
 
-def testEpoch(model, criterion, optimizer, imageDir, prepreocF):
-    loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in params.testingSeries+["tot"]}
+def testEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
+    loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
     model.eval()
     model.training = False
 
     test_initT = time.time()
-    for sequence in params.testingSeries:
+    for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
         test_numOfBatch = dg.numBatchImgs - 1
@@ -332,14 +332,14 @@ def testEpoch(model, criterion, optimizer, imageDir, prepreocF):
         torch.cuda.empty_cache()
     test_elapsedT = time.time() - test_initT
     loss_test["tot"]["tot"].append(sum(
-        [np.mean(loss_test[seq]["tot"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_test["tot"]["pose"].append(sum(
-        [np.mean(loss_test[seq]["pose"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_test["tot"]["rot"].append(sum(
-        [np.mean(loss_test[seq]["rot"]) for seq in params.testingSeries]
-        )/len(params.testingSeries))
+        [np.mean(loss_test[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Test: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_test["tot"]["tot"][-1], loss_test["tot"]["pose"][-1], loss_test["tot"]["rot"][-1], test_elapsedT),
         head="\n")
@@ -348,8 +348,8 @@ def testEpoch(model, criterion, optimizer, imageDir, prepreocF):
 
 
 
-def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
     model.train()
@@ -359,7 +359,7 @@ def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF):
 
     dataGens = []
     outDisps = []
-    for s in params.trainingSeries:
+    for s in sequences:
         dataGens.append(DataGeneretorOnline(prepreocF, s, imageDir, attach=True))
         PM.printI(bcolors.LIGHTGREEN+f"sequence: {s}"+bcolors.ENDC)
         outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
@@ -405,14 +405,14 @@ def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF):
 
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
 
@@ -420,15 +420,15 @@ def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF):
 
 
 
-def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in params.trainingSeries+["tot"]}
+def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
     model.train()
     model.training = True
 
     train_initT = time.time()
-    rdg = RandomDataGeneretor(params.trainingSeries, imageDir, 2, prepreocF=prepreocF, attach=True)
+    rdg = RandomDataGeneretor(sequences, imageDir, 2, prepreocF=prepreocF, attach=True)
     train_numOfBatch = rdg.maxIters-1
     PB = PM.printProgressBarI(0, train_numOfBatch)
     outputs = []
@@ -459,7 +459,7 @@ def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF):
     gc.collect()
     torch.cuda.empty_cache()
 
-    for s in params.trainingSeries:
+    for s in sequences:
         PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
             np.mean(loss_train[s]["tot"]),
             np.mean(loss_train[s]["pose"]),
@@ -468,14 +468,14 @@ def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF):
 
     train_elapsedT = time.time() - train_initT
     loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
     loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in params.trainingSeries]
-        )/len(params.trainingSeries))
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
     PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
         loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT),
         head="\n")
@@ -490,7 +490,8 @@ class enumTrain(Enum):
     online_random_RDG = "online_random_RDG"
 
 
-def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train):
+def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
+               sequences_train=params.trainingSeries, sequences_test=params.testingSeries):
     # Load the model
     if params.FLAG_LOAD:
         fileName = os.path.join(params.dir_Model,
@@ -514,15 +515,17 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train):
 
         # Train the model
         if type_train == enumTrain.online:
-            loss_train, train_elapsedT = trainEpoch(model, criterion, optimizer, imageDir, prepreocF)
+            loss_train, train_elapsedT = trainEpoch(model, criterion, optimizer,
+                                                    imageDir, prepreocF, sequences=sequences_train)
         elif type_train == enumTrain.preprocessed:
-            loss_train, train_elapsedT = trainEpochPreprocessed(model, criterion, optimizer)
+            loss_train, train_elapsedT = trainEpochPreprocessed(model, criterion,
+                                                                optimizer, sequences=sequences_train)
         elif type_train == enumTrain.online_random:
             loss_train, train_elapsedT = trainEpochRandom(model, criterion, optimizer,
-                                                          imageDir, prepreocF)
+                                                          imageDir, prepreocF, sequences=sequences_train)
         elif type_train == enumTrain.online_random_RDG:
             loss_train, train_elapsedT = trainEpochRandom_RDG(model, criterion, optimizer,
-                                                              imageDir, prepreocF)
+                                                              imageDir, prepreocF, sequences=sequences_train)
         else:
             raise NotImplementedError
 
@@ -564,9 +567,11 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train):
         if type_train == enumTrain.online or \
                 type_train == enumTrain.online_random or \
                 type_train == enumTrain.online_random_RDG:
-            loss_test, test_elapsedT = testEpoch(model, criterion, optimizer, imageDir, prepreocF)
+            loss_test, test_elapsedT = testEpoch(model, criterion, optimizer, imageDir, prepreocF,
+                                                 sequences=sequences_test)
         elif type_train == enumTrain.preprocessed:
-            loss_test, test_elapsedT = testEpochPreprocessed(model, criterion, optimizer)
+            loss_test, test_elapsedT = testEpochPreprocessed(model, criterion, optimizer,
+                                                             sequences=sequences_test)
         else:
             raise NotImplementedError
 
