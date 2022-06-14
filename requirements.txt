@@ -1,11 +1,21 @@
 
-torch>=1.10.2
+torch>=1.11.0  # pip3 install torch torchvision torchaudio
 
 numpy
-opencv-python
+opencv-python  # cv2
 glob
 Image
 scipy
 skimage
-matplotlib
+matplotlib  # .pyplotlib
 IPython
+Pillow  # PIL
+
+# os
+# re
+# gc
+# abc
+# enum
+# time
+# math
+# random
