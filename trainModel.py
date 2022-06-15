@@ -142,7 +142,7 @@ def testEpochPreprocessed(model, criterion, optimizer, sequences=params.testingS
                 pos = i*params.BACH_SIZE+j
                 pts_yTest = np.append(pts_yTest, [pts_yTest[pos] + y[pos]], axis=0)
                 if pos % params.STEP == 0:
-                    pts_out = np.append(pts_out, [pts_out[pos] + outputs[i][j]], axis=0)
+                    pts_out = np.append(pts_out, [pts_out[-1] + outputs[i][j]], axis=0)
 
         del outputs, y
         gc.collect()
