@@ -141,7 +141,8 @@ def testEpochPreprocessed(model, criterion, optimizer, sequences=params.testingS
             for j in range(0, params.BACH_SIZE):
                 pos = i*params.BACH_SIZE+j
                 pts_yTest = np.append(pts_yTest, [pts_yTest[pos] + y[pos]], axis=0)
-                pts_out = np.append(pts_out, [pts_out[pos] + outputs[i][j]], axis=0)
+                if pos % params.step == 0:
+                    pts_out = np.append(pts_out, [pts_out[pos] + outputs[i][j]], axis=0)
 
         del outputs, y
         gc.collect()
@@ -302,7 +303,9 @@ def testEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params
 
                 for j in range(params.BACH_SIZE):
                     pts_yTest = np.append(pts_yTest, [pts_yTest[-1] + det_labels[j]], axis=0)
-                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+
+                    if j % params.step == 0:
+                        pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
