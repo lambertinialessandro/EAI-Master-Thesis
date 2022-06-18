@@ -59,15 +59,19 @@ def readPosesFromFile(posesSet, N, path):
             pose1 = pose2
         PM.printProgressBarI(N, N)
 
-def convertDataset(listTypePreproc):
-    for dirSeqName in ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']:
-        #os.listdir(path_sequences):
-        dirSeq = os.path.join(params.path_sequences, dirSeqName)
+
+def convertDataset(path_sequences, path_poses,
+                   listSequences, listDirs, listTypePreproc):
+    PM.printI(bcolors.DARKYELLOW+"Converting dataset"+bcolors.ENDC+" ###", head="\n")
+
+
+    for dirSeqName in listSequences:
+        dirSeq = os.path.join(path_sequences, dirSeqName)
         if not os.path.isdir(dirSeq):
             continue
 
         PM.printI(bcolors.DARKYELLOW+"Converting: "+dirSeqName+bcolors.ENDC, head="\n")
-        for imgsSeqName in os.listdir(dirSeq): # ['image_2']
+        for imgsSeqName in listDirs:
             imgsSeq = os.path.join(dirSeq, imgsSeqName)
             if not os.path.isdir(imgsSeq):
                 continue
@@ -76,7 +80,7 @@ def convertDataset(listTypePreproc):
             imgs_N = len(x_files)
 
             for typePreproc in listTypePreproc:
-                suffix = "_{}_{}_{}_loaded.npy".format(typePreproc.name, params.WIDTH, params.HEIGHT)
+                suffix = "_{}_{}_{}_loaded.npy".format(*typePreproc.suffix())
                 pathFinalFile = os.path.join(dirSeq, imgsSeqName + suffix)
 
                 if os.path.isfile(pathFinalFile):
@@ -94,7 +98,7 @@ def convertDataset(listTypePreproc):
                 PM.printI(bcolors.DARKGREEN+"Done: "+pathFinalFile+bcolors.ENDC)
 
 
-        poseFileName = os.path.join(params.path_poses, dirSeqName+"_pose_loaded.npy")
+        poseFileName = os.path.join(path_poses, dirSeqName+"_pose_loaded.npy")
         if os.path.isfile(poseFileName):
             PM.printD("Already converted [poses/"+dirSeqName+".txt]!!")
             PM.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
@@ -103,7 +107,7 @@ def convertDataset(listTypePreproc):
             initT = time.time()
 
             posesSet = []
-            fileName = os.path.join(params.path_poses, dirSeqName+'.txt')
+            fileName = os.path.join(path_poses, dirSeqName+'.txt')
             if os.path.isfile(fileName):
                 readPosesFromFile(posesSet, imgs_N, fileName)
 
@@ -116,34 +120,29 @@ def convertDataset(listTypePreproc):
             else:
                 PM.printD(bcolors.WARNING+fileName+" does not exists!!"+bcolors.ENDC)
 
-
-
-def main():
-    PM.printI(bcolors.DARKYELLOW+"Checking directories"+bcolors.ENDC+" ###\n")
-    dirs = [params.dir_main, params.dir_Dataset, params.path_sequences,
-            params.dir_Model, params.dir_History]
-    checkExistDirs(dirs)
-    PM.printI("Directories checked!")
-
-    # listTypePreproc = EnumPreproc.listAllPreproc((WIDTH, HEIGHT))
-    # listTypePreproc = [EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT)),
-    #                    EnumPreproc.QUAD_PURE((params.WIDTH, params.HEIGHT))]
-    listTypePreproc = [EnumPreproc.SOBEL((params.WIDTH, params.HEIGHT))]
-
-    PM.printI(bcolors.DARKYELLOW+"Converting dataset"+bcolors.ENDC+" ###", head="\n")
-    convertDataset(listTypePreproc)
     PM.printI("Done dataset convertion!")
 
+
+
 if __name__ == "__main__":
-    main()
+    import params
+    from modules.preprocess.PreprocessModule import PreprocessFactory
+
+    PM.setFlags(True, True, False)
 
 
+    path_sequences = params.path_sequences
+    path_poses = params.path_poses
 
+    listSequences = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
+        # ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']  os.listdir(path_sequences):
+    listDirs = ['image_2'] # ['image_2']  os.listdir(dirSeq)
+    listTypePreproc = [PreprocessFactory.build(
+                            PreprocessFactory.PreprocessEnum.SOBEL,
+                            (params.WIDTH, params.HEIGHT)),
+                      ] # PreprocessFactory.listAllPreproc((params.WIDTH, params.HEIGHT))
 
-
-
-
-
-
+    convertDataset(path_sequences, path_poses,
+                    listSequences, listDirs, listTypePreproc)
 
 
