@@ -4,62 +4,81 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-import params
-from utility import PM, bcolors
+from modules.utility import PM, bcolors
 
 
-lossNames = {}
-check_re = re.compile("^loss\w+\[\d+\]\.txt$") # \[\d+\-\d+\]
-prefix_re = re.compile("^loss\w+")
-interval_re = re.compile("(?<=\[)\d+")
+def readHistoryFromDir(dir_History):
+    check_re_single = re.compile("^loss\w+\[\d+\]\.txt$")
+    interval_re_single = re.compile("(?<=\[)\d+")
 
-for s in os.listdir(params.dir_History):
-    matched = check_re.match(s)
-    is_match = bool(matched)
+    check_re_double = re.compile("^loss\w+\[\d+\-\d+\]\.txt$")
+    interval_re_double = re.compile("(?<=\[)\d+\-\d+")
 
-    prefix = prefix_re.findall(s)[0]
-    if len(interval_re.findall(s)) <= 0:
-      break
-    interval = interval_re.findall(s)[0]
+    prefix_re = re.compile("^loss\w+")
+    lossNames = {}
 
-    if not prefix in lossNames.keys():
-        lossNames[prefix] = []
-    lossNames[prefix].append(interval)
+    for s in os.listdir(dir_History):
+        if bool(check_re_single.match(s)):
+            interval = interval_re_single.findall(s)[0]
+        elif bool(check_re_double.match(s)):
+            interval = interval_re_double.findall(s)[0].split('-')
+        else:
+            continue
 
+        prefix = prefix_re.findall(s)[0]
+        if not prefix in lossNames.keys():
+            lossNames[prefix] = []
+        lossNames[prefix].append(interval)
 
+    for k in lossNames.keys():
+        if isinstance(lossNames[k][0], str):
+            lossNames[k] = sorted(lossNames[k], key=lambda x: int(x))
+        elif isinstance(lossNames[k][0], list):
+            lossNames[k] = sorted(lossNames[k], key=lambda x: int(x[0]))
 
-
-# for k in lossNames.keys():
-#     lossNames[k] = sorted(lossNames[k], key=lambda x: int(x[0]))
-# print(lossNames)
-
-for k in lossNames.keys():
-    lossNames[k] = sorted(lossNames[k], key=lambda x: int(x))
-
-PM.printD(f"{lossNames}")
-
-
-
-totLosses = {}
-for name in lossNames.keys():
-    PM.printI("Current file: "+bcolors.LIGHTGREEN+f"{name}"+bcolors.ENDC, head="\n")
-    totLosses[name] = {'train': {}, 'test': {}}
-
-    for i in lossNames[name]:
-        PM.printD(bcolors.LIGHTYELLOW+f"{i}"+bcolors.ENDC)
-        currPos = int(i)
-        with open(os.path.join(params.dir_History, f"{name}[{i}].txt"), "r") as f:
-            totLosses[name]['train'][currPos] = eval(f.readline())['tot']
-            totLosses[name]['test'][currPos] = eval(f.readline())['tot']
+    return lossNames
 
 
-    # Train
-    y_tot = [totLosses[name]['train'][k]['tot'] for k in totLosses[name]['train'].keys()]
-    y_pos = [totLosses[name]['train'][k]['pose'] for k in totLosses[name]['train'].keys()]
-    y_rot = [totLosses[name]['train'][k]['rot'] for k in totLosses[name]['train'].keys()]
+def plot_graph(dir_History, name, lossName):
+    totLosses = {'train': {}, 'test': {}}
 
-    dimX = len(totLosses[name]['train'])
+    pb = PM.printProgressBarI(0, len(lossName))
+    if isinstance(lossName[0], str):
+        for i in lossName:
+            currPos = int(i)
+            pb.update(currPos)
+            with open(os.path.join(dir_History, f"{name}[{i}].txt"), "r") as f:
+                state = 0
+                for line in f:
+                    app_d = eval(line)
+                    if state == 0:
+                        state = 1
+                        totLosses['train'][currPos] = app_d['tot']
+                    else:
+                        state = 0
+                        totLosses['test'][currPos] = app_d['tot']
+                        currPos = currPos + 1
+    elif isinstance(lossName[0], list):
+        for minI, maxI in lossName:
+            currPos = int(minI)
+            with open(os.path.join(dir_History, f"{name}[{minI}-{maxI}].txt"), "r") as f:
+                state = 0
+                for line in f:
+                    app_d = eval(line)
+                    if state == 0:
+                        state = 1
+                        totLosses['train'][currPos] = app_d['tot']
+                    else:
+                        state = 0
+                        totLosses['test'][currPos] = app_d['tot']
+                        currPos = currPos + 1
+
+    dimX = len(totLosses['train'])
     x = np.linspace(1, dimX, dimX)
+
+    y_tot = [totLosses['train'][k]['tot'] for k in totLosses['train'].keys()]
+    y_pos = [totLosses['train'][k]['pose'] for k in totLosses['train'].keys()]
+    y_rot = [totLosses['train'][k]['rot'] for k in totLosses['train'].keys()]
 
     plt.figure(figsize=(8, 6), dpi=80)
     plt.plot(x, y_tot, color='red')
@@ -68,10 +87,9 @@ for name in lossNames.keys():
     plt.legend(['total loss', 'position loss', 'rotation loss'])
     plt.show()
 
-    # Test
-    y_tot = [totLosses[name]['test'][k]['tot'] for k in totLosses[name]['test'].keys()]
-    y_pos = [totLosses[name]['test'][k]['pose'] for k in totLosses[name]['test'].keys()]
-    y_rot = [totLosses[name]['test'][k]['rot'] for k in totLosses[name]['test'].keys()]
+    y_tot = [totLosses['test'][k]['tot'] for k in totLosses['test'].keys()]
+    y_pos = [totLosses['test'][k]['pose'] for k in totLosses['test'].keys()]
+    y_rot = [totLosses['test'][k]['rot'] for k in totLosses['test'].keys()]
 
     dimX = len(y_tot)
     x = np.linspace(1, dimX, dimX)
@@ -84,14 +102,30 @@ for name in lossNames.keys():
     plt.show()
 
 
+def analizeHistory(dir_History):
+    lossNames = readHistoryFromDir(dir_History)
+
+    while True:
+        PM.printI(bcolors.LIGHTGREEN+"Select:"+bcolors.ENDC)
+        elems = list(lossNames.keys())
+        for i in range(len(elems)):
+            PM.printI(f"\t{i}: "+bcolors.LIGHTYELLOW+f"{elems[i]}"+bcolors.ENDC)
+        PM.printI("\t-1: "+bcolors.LIGHTYELLOW+"Exit"+bcolors.ENDC)
+
+        selc = int(input("Input history: "))
+
+        if selc == -1:
+            break
+
+        plot_graph(dir_History, elems[selc], lossNames[elems[selc]])
+        input("PAUSE")
 
 
 
+if __name__ == "__main__":
+    import params
+    dir_History = params.dir_History
 
-
-
-
-
-
+    analizeHistory(dir_History)
 
 
