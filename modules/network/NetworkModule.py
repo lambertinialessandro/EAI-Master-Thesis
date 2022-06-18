@@ -1,9 +1,9 @@
 
-from utility import PM, bcolors
+from modules.utility import PM, bcolors
 
-from ModelModule import ModelFactory, ModelEnum
-from CriterionModule import CriterionFactory, CriterionEnum
-from OptimizerModule import OptimizerFactory, OptimizerEnum
+from modules.network.ModelModule import ModelFactory, ModelEnum
+from modules.network.CriterionModule import CriterionFactory, CriterionEnum
+from modules.network.OptimizerModule import OptimizerFactory, OptimizerEnum
 
 
 class NetworkFactory():
@@ -11,11 +11,11 @@ class NetworkFactory():
     CriterionEnum = CriterionEnum
     OptimizerEnum = OptimizerEnum
 
-    def build(typeModel: ModelEnum, device,
+    def build(typeModel: ModelEnum, input_size_LSTM, hidden_size_LSTM, device,
               typeCriterion: CriterionEnum,
               typeOptimizer: OptimizerEnum):
 
-        model = ModelFactory.build(typeModel, device)
+        model = ModelFactory.build(typeModel, input_size_LSTM, hidden_size_LSTM, device)
         criterion = CriterionFactory.build(typeCriterion)
         optimizer = OptimizerFactory.build(typeOptimizer, model)
 

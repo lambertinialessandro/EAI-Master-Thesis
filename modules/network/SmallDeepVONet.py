@@ -1,8 +1,5 @@
 
-import torch
 import torch.nn as nn
-
-import params
 
 
 class C_Block(nn.Module):
@@ -24,7 +21,7 @@ class C_Block(nn.Module):
 
 
 class SmallDeepVONet(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size_LSTM, hidden_size_LSTM):
         super(SmallDeepVONet, self).__init__()
         # 6, 64, 128, 256, 512, 512, 1024
         # 2, 24,  48,  96, 192, 192, 384
@@ -44,9 +41,7 @@ class SmallDeepVONet(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.dimLSTM = params.DIM_LSTM
-        self.hidden_size = params.HIDDEN_SIZE_LSTM
-        self.lstm = nn.LSTM(input_size=self.dimLSTM, hidden_size=self.hidden_size,
+        self.lstm = nn.LSTM(input_size=input_size_LSTM, hidden_size=hidden_size_LSTM,
                             num_layers=2, dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
 

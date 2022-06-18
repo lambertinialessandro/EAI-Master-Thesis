@@ -1,11 +1,9 @@
 
 from enum import Enum
 
-import params
-
-from DeepVONet import DeepVONet, DeepVONet_FSM
-from SmallDeepVONet import SmallDeepVONet
-from QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
+from modules.network.DeepVONet import DeepVONet, DeepVONet_FSM
+from modules.network.SmallDeepVONet import SmallDeepVONet
+from modules.network.QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
 
 
 class ModelEnum(Enum):
@@ -22,17 +20,17 @@ class ModelFactory():
         pass
 
     @staticmethod
-    def build(typeModel: ModelEnum, device):
+    def build(typeModel: ModelEnum, input_size_LSTM, hidden_size_LSTM, device):
         if typeModel == ModelEnum.DeepVONet:
-            model = DeepVONet().to(device)
+            model = DeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
         elif typeModel == ModelEnum.DeepVONet_FSM:
-            model = DeepVONet_FSM().to(device)
+            model = DeepVONet_FSM(input_size_LSTM, hidden_size_LSTM).to(device)
 
         elif typeModel == ModelEnum.SmallDeepVONet:
-            model = SmallDeepVONet().to(device)
+            model = SmallDeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
 
         elif typeModel == ModelEnum.QuaternionDeepVONet:
-            model = QuaternionDeepVONet().to(device)
+            model = QuaternionDeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
         elif typeModel == ModelEnum.QuaternionDeepVONet_FSM:
             model = QuaternionDeepVONet_FSM().to(device)
         else:
