@@ -627,7 +627,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
 
-def main():
+if __name__ == "__main__":
     from NetworkModule import NetworkFactory
 
     imageDir = "image_2"
@@ -654,10 +654,5 @@ def main():
     type_train = enumTrain.preprocessed # preprocessed  online_random_RDG
 
     trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
-
-
-
-if __name__ == "__main__":
-    main()
 
 
