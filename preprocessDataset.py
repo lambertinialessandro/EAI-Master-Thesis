@@ -9,22 +9,12 @@ r11 r12 r13 tx r21 r22 r23 ty r31 r32 r33 tz
 """
 
 import os
-import math
 import time
 import numpy as np
 
-from EnumPreproc import EnumPreproc
-import params
-from utility import PM, bcolors
+import modules.utility as utility
+from modules.utility import PM, bcolors
 
-
-def checkExistDirs(dirs):
-    for dir in dirs:
-      if not os.path.exists(dir):
-        os.makedirs(dir)
-        PM.printD(dir + " --> CREATED")
-      else:
-        PM.printD(dir + " --> ALREADY EXIST")
 
 def readImgsToList(path, files, N, typePreproc):
     pos = 0
@@ -51,35 +41,6 @@ def readImgsToList(path, files, N, typePreproc):
     PM.printProgressBarI(N, N)
     return np.reshape(imagesSet, (-1, w1, h1, c1*2))
 
-def isRotationMatrix(R):
-    RT = np.transpose(R)
-    n = np.linalg.norm(np.identity(3, dtype = R.dtype) - np.dot(RT, R))
-    return n < 1e-6
-
-def rotationMatrix2EulerAngles(R):
-    assert(isRotationMatrix(R))
-
-    sy = math.sqrt(R[0,0]*R[0,0] + R[1,0]*R[1,0])
-    if  sy < 1e-6:
-        x = math.atan2(-R[1,2], R[1,1])
-        y = math.atan2(-R[2,0], sy)
-        z = 0
-    else:
-        x = math.atan2(R[2,1] , R[2,2])
-        y = math.atan2(-R[2,0], sy)
-        z = math.atan2(R[1,0], R[0,0])
-
-    return np.array([x, y, z])
-
-def poseFile2poseRobot(posef):
-    p = np.array([posef[3], posef[7], posef[11]])
-    R = np.array([[posef[0], posef[1], posef[2]],
-                  [posef[4], posef[5], posef[6]],
-                  [posef[8], posef[9], posef[10]]])
-
-    angles = rotationMatrix2EulerAngles(R)
-    pose = np.concatenate((p, angles))
-    return pose
 
 def readPosesFromFile(posesSet, N, path):
     pose1 = []
@@ -89,7 +50,7 @@ def readPosesFromFile(posesSet, N, path):
         for pos in range(N):
             PM.printProgressBarI(pos, N)
             posef = np.fromstring(f.readline(), dtype=float, sep=' ')
-            pose2 = poseFile2poseRobot(posef)
+            pose2 = utility.poseFile2poseRobot(posef)
 
             if pos > 0:
                 pose = pose2-pose1

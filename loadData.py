@@ -8,38 +8,7 @@ import torch
 
 import params
 from PreprocessModule import PreprocessEnum
-from utility import PM, bcolors
-
-# TODO
-def isRotationMatrix(R):
-    n_R = np.linalg.norm(
-              np.identity(3, dtype = R.dtype) - np.dot(np.transpose(R), R)
-          )
-    return n_R < 1e-6
-# TODO
-def rotationMatrix2EulerAngles(R):
-    assert(isRotationMatrix(R))
-
-    sy = math.sqrt(R[0,0]*R[0,0] + R[1,0]*R[1,0])
-    if  sy < 1e-6:
-        x = math.atan2(-R[1,2], R[1,1])
-        y = math.atan2(-R[2,0], sy)
-        z = 0
-    else:
-        x = math.atan2(R[2,1] , R[2,2])
-        y = math.atan2(-R[2,0], sy)
-        z = math.atan2(R[1,0], R[0,0])
-
-    return np.array([x, y, z])
-# TODO
-def poseFile2poseRobot(posef):
-    p = np.array([posef[3], posef[7], posef[11]])
-    R = np.array([[posef[0], posef[1], posef[2]],
-                  [posef[4], posef[5], posef[6]],
-                  [posef[8], posef[9], posef[10]]])
-
-    angles = rotationMatrix2EulerAngles(R)
-    return np.concatenate((p, angles))
+from modules.utility import PM, bcolors, poseFile2poseRobot
 
 
 class AbstractDataGenerator(ABC):
