@@ -1,11 +1,10 @@
 
 from enum import Enum
 
-import modules.network.models as mnm
-from mnm.DeepVONet import DeepVONet, DeepVONet_FSM
-from mnm.SmallDeepVONet import SmallDeepVONet
-from mnm.QuaternionSmallDeepVONet import QuaternionSmallDeepVONet
-from mnm.QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
+from modules.network.models.DeepVONet import DeepVONet, DeepVONet_FSM
+from modules.network.models.SmallDeepVONet import SmallDeepVONet
+from modules.network.models.QuaternionSmallDeepVONet import QuaternionSmallDeepVONet
+from modules.network.models.QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
 
 
 class ModelEnum(Enum):
