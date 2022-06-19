@@ -11,7 +11,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from loadData import DataGeneretorOnline, RandomDataGeneretor, DataGeneretorPreprocessed, \
+from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataGeneretor, \
     DataLoader, attach2Torch
 
 import params
@@ -19,9 +19,7 @@ from modules.preprocess.PreprocessModule import PreprocessEnum
 from modules.utility import PM, bcolors
 
 
-def trainEpochPreprocessed(model, criterion, optimizer, sequences=params.trainingSeries):
-    imageDir = "image_2"
-
+def trainEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
@@ -29,7 +27,325 @@ def trainEpochPreprocessed(model, criterion, optimizer, sequences=params.trainin
     model.training = True
 
     train_initT = time.time()
-    rdg = RandomDataGeneretor(sequences, imageDir, 1, suffixType=params.suffixType, attach=True)
+    for sequence in sequences:
+        PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
+        dg = DataGeneretorPreprocessed(prepreocF, sequence, imageDir, attach=True)
+        train_numOfBatch = dg.numBatchImgs - 1
+        PB = PM.printProgressBarI(0, train_numOfBatch)
+        outputs = []
+        pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
+        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
+
+        for inputs, labels, pos, nb in dg:
+            for i in range(nb):
+                torch.cuda.empty_cache()
+
+                model.zero_grad()
+
+                outputs = model(inputs[i])
+                if params.DEVICE.type == 'cuda':
+                    det_outputs = outputs.cpu().detach().numpy()
+                    det_labels = labels[i].cpu().detach().numpy()
+                else:
+                    det_outputs = outputs.detach().numpy()
+                    det_labels = labels[i].detach().numpy()
+
+                totLoss = criterion(outputs, labels[i])
+                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+                totLoss.backward()
+                optimizer.step()
+
+                loss_train[sequence]["tot"].append(totLoss.item())
+                loss_train[sequence]["pose"].append(poseLoss)
+                loss_train[sequence]["rot"].append(rotLoss)
+
+                for j in range(params.BACH_SIZE):
+                    pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
+                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+            del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
+            gc.collect()
+            torch.cuda.empty_cache()
+            PB.update(i)
+        del dg
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[sequence]["tot"]),
+            np.mean(loss_train[sequence]["pose"]),
+            np.mean(loss_train[sequence]["rot"])
+            ))
+
+        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
+        plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
+        plt.legend(['out', 'yTest'])
+        plt.show()
+
+        ax = plt.axes(projection='3d')
+        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
+        ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
+        plt.legend(['out', 'yTest'])
+        plt.show()
+        del pts_yTrain, pts_out
+        gc.collect()
+        torch.cuda.empty_cache()
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
+
+def trainEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+    for sequence in sequences:
+        PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
+        dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
+        train_numOfBatch = dg.numBatchImgs - 1
+        PB = PM.printProgressBarI(0, train_numOfBatch)
+        outputs = []
+        pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
+        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
+
+        for inputs, labels, pos, nb in dg:
+            for i in range(nb):
+                torch.cuda.empty_cache()
+
+                model.zero_grad()
+
+                outputs = model(inputs[i])
+                if params.DEVICE.type == 'cuda':
+                    det_outputs = outputs.cpu().detach().numpy()
+                    det_labels = labels[i].cpu().detach().numpy()
+                else:
+                    det_outputs = outputs.detach().numpy()
+                    det_labels = labels[i].detach().numpy()
+
+                totLoss = criterion(outputs, labels[i])
+                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+                totLoss.backward()
+                optimizer.step()
+
+                loss_train[sequence]["tot"].append(totLoss.item())
+                loss_train[sequence]["pose"].append(poseLoss)
+                loss_train[sequence]["rot"].append(rotLoss)
+
+                for j in range(params.BACH_SIZE):
+                    pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
+                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+            del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
+            gc.collect()
+            torch.cuda.empty_cache()
+            PB.update(i)
+        del dg
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[sequence]["tot"]),
+            np.mean(loss_train[sequence]["pose"]),
+            np.mean(loss_train[sequence]["rot"])
+            ))
+
+        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
+        plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
+        plt.legend(['out', 'yTest'])
+        plt.show()
+
+        ax = plt.axes(projection='3d')
+        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
+        ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
+        plt.legend(['out', 'yTest'])
+        plt.show()
+        del pts_yTrain, pts_out
+        gc.collect()
+        torch.cuda.empty_cache()
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
+
+
+def trainEPR(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+
+    dataGens = []
+    outDisps = []
+    for sequence in sequences:
+        dataGens.append(DataGeneretorPreprocessed(prepreocF, sequence, imageDir, attach=True))
+        PM.printI(bcolors.LIGHTGREEN+f"sequence: {sequence}"+bcolors.ENDC)
+        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
+
+    while len(dataGens) > 0:
+        pos_dg = random.randint(0, len(dataGens)-1)
+
+        try:
+            inputs, labels, pos, nb = dataGens[pos_dg].__next__()
+            outputs = []
+            outDisps[pos_dg].update(pos)
+
+            for i in range(nb):
+                torch.cuda.empty_cache()
+
+                model.zero_grad()
+
+                outputs = model(inputs[i])
+
+                totLoss = criterion(outputs, labels[i])
+                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+                totLoss.backward()
+                optimizer.step()
+
+                loss_train[dataGens[pos_dg].sequence]["tot"].append(totLoss.item())
+                loss_train[dataGens[pos_dg].sequence]["pose"].append(poseLoss)
+                loss_train[dataGens[pos_dg].sequence]["rot"].append(rotLoss)
+
+            del inputs, labels, totLoss, poseLoss, rotLoss
+            gc.collect()
+            torch.cuda.empty_cache()
+        except StopIteration:
+            PM.printI("Loss Sequence[{dataGens[pos_dg].sequence}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"])
+                ))
+
+            dataGens.remove(dataGens[pos_dg])
+            outDisps.remove(outDisps[pos_dg])
+
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
+
+def trainEOR(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+
+    dataGens = []
+    outDisps = []
+    for sequence in sequences:
+        dataGens.append(DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True))
+        PM.printI(bcolors.LIGHTGREEN+f"sequence: {sequence}"+bcolors.ENDC)
+        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
+
+    while len(dataGens) > 0:
+        pos_dg = random.randint(0, len(dataGens)-1)
+
+        try:
+            inputs, labels, pos, nb = dataGens[pos_dg].__next__()
+            outputs = []
+            outDisps[pos_dg].update(pos)
+
+            for i in range(nb):
+                torch.cuda.empty_cache()
+
+                model.zero_grad()
+
+                outputs = model(inputs[i])
+
+                totLoss = criterion(outputs, labels[i])
+                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+                totLoss.backward()
+                optimizer.step()
+
+                loss_train[dataGens[pos_dg].sequence]["tot"].append(totLoss.item())
+                loss_train[dataGens[pos_dg].sequence]["pose"].append(poseLoss)
+                loss_train[dataGens[pos_dg].sequence]["rot"].append(rotLoss)
+
+            del inputs, labels, totLoss, poseLoss, rotLoss
+            gc.collect()
+            torch.cuda.empty_cache()
+        except StopIteration:
+            PM.printI("Loss Sequence[{dataGens[pos_dg].sequence}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"]),
+                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"])
+                ))
+
+            dataGens.remove(dataGens[pos_dg])
+            outDisps.remove(outDisps[pos_dg])
+
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
+
+    return loss_train, train_elapsedT
+
+
+def trainEPR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+    rdg = RandomDataGeneretor(sequences, imageDir,
+                              RandomDataGeneretor.GeneratorType.PREPROCESS,
+                              prepreocF, attach=True)
     train_numOfBatch = rdg.maxIters-1
     PB = PM.printProgressBarI(0, train_numOfBatch)
     outputs = []
@@ -82,7 +398,72 @@ def trainEpochPreprocessed(model, criterion, optimizer, sequences=params.trainin
 
     return loss_train, train_elapsedT
 
-def testEpochPreprocessed(model, criterion, optimizer, sequences=params.testingSeries):
+def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
+    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
+
+    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
+    model.train()
+    model.training = True
+
+    train_initT = time.time()
+    rdg = RandomDataGeneretor(sequences, imageDir,
+                              RandomDataGeneretor.GeneratorType.ONLINE,
+                              prepreocF, attach=True)
+    train_numOfBatch = rdg.maxIters-1
+    PB = PM.printProgressBarI(0, train_numOfBatch)
+    outputs = []
+
+    for inputs, labels, pos, seq, nb in rdg:
+        for i in range(nb):
+            torch.cuda.empty_cache()
+
+            model.zero_grad()
+
+            outputs = model(inputs[i])
+
+            totLoss = criterion(outputs, labels[i])
+            poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
+            rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+
+            totLoss.backward()
+            optimizer.step()
+
+            loss_train[seq[i]]["tot"].append(totLoss.item())
+            loss_train[seq[i]]["pose"].append(poseLoss)
+            loss_train[seq[i]]["rot"].append(rotLoss)
+        del inputs, labels, totLoss, poseLoss, rotLoss
+        gc.collect()
+        torch.cuda.empty_cache()
+        PB.update(pos)
+    del rdg
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    for s in sequences:
+        PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
+            np.mean(loss_train[s]["tot"]),
+            np.mean(loss_train[s]["pose"]),
+            np.mean(loss_train[s]["rot"])
+            ))
+
+    train_elapsedT = time.time() - train_initT
+    loss_train["tot"]["tot"].append(sum(
+        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["pose"].append(sum(
+        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
+        )/len(sequences))
+    loss_train["tot"]["rot"].append(sum(
+        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
+        )/len(sequences))
+    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
+        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT),
+        head="\n")
+
+    return loss_train, train_elapsedT
+
+
+def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -176,96 +557,7 @@ def testEpochPreprocessed(model, criterion, optimizer, sequences=params.testingS
 
     return loss_test, test_elapsedT
 
-
-
-def trainEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
-
-    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
-    model.train()
-    model.training = True
-
-    train_initT = time.time()
-    for sequence in sequences:
-        PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
-        train_numOfBatch = dg.numBatchImgs - 1
-        PB = PM.printProgressBarI(0, train_numOfBatch)
-        outputs = []
-        pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
-        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
-
-        for inputs, labels, pos, nb in dg:
-            for i in range(nb):
-                torch.cuda.empty_cache()
-
-                model.zero_grad()
-
-                outputs = model(inputs[i])
-                if params.DEVICE.type == 'cuda':
-                    det_outputs = outputs.cpu().detach().numpy()
-                    det_labels = labels[i].cpu().detach().numpy()
-                else:
-                    det_outputs = outputs.detach().numpy()
-                    det_labels = labels[i].detach().numpy()
-
-                totLoss = criterion(outputs, labels[i])
-                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
-                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
-
-                totLoss.backward()
-                optimizer.step()
-
-                loss_train[sequence]["tot"].append(totLoss.item())
-                loss_train[sequence]["pose"].append(poseLoss)
-                loss_train[sequence]["rot"].append(rotLoss)
-
-                for j in range(params.BACH_SIZE):
-                    pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
-                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
-            del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
-            gc.collect()
-            torch.cuda.empty_cache()
-            PB.update(i)
-        del dg
-        gc.collect()
-        torch.cuda.empty_cache()
-
-        PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[sequence]["tot"]),
-            np.mean(loss_train[sequence]["pose"]),
-            np.mean(loss_train[sequence]["rot"])
-            ))
-
-        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
-        plt.plot(pts_yTrain[:, 0], pts_yTrain[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
-
-        ax = plt.axes(projection='3d')
-        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
-        ax.plot3D(pts_yTrain[:, 0], pts_yTrain[:, 1], pts_yTrain[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
-        del pts_yTrain, pts_out
-        gc.collect()
-        torch.cuda.empty_cache()
-    train_elapsedT = time.time() - train_initT
-    loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
-        )/len(sequences))
-    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
-
-    return loss_train, train_elapsedT
-
-def testEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
+def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -350,146 +642,14 @@ def testEpoch(model, criterion, optimizer, imageDir, prepreocF, sequences=params
     return loss_test, test_elapsedT
 
 
-
-def trainEpochRandom(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
-
-    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
-    model.train()
-    model.training = True
-
-    train_initT = time.time()
-
-    dataGens = []
-    outDisps = []
-    for s in sequences:
-        dataGens.append(DataGeneretorOnline(prepreocF, s, imageDir, attach=True))
-        PM.printI(bcolors.LIGHTGREEN+f"sequence: {s}"+bcolors.ENDC)
-        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
-
-    while len(dataGens) > 0:
-        pos_dg = random.randint(0, len(dataGens)-1)
-
-        try:
-            inputs, labels, pos, nb = dataGens[pos_dg].__next__()
-            outputs = []
-            outDisps[pos_dg].update(pos)
-
-            for i in range(nb):
-                torch.cuda.empty_cache()
-
-                model.zero_grad()
-
-                outputs = model(inputs[i])
-
-                totLoss = criterion(outputs, labels[i])
-                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
-                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
-
-                totLoss.backward()
-                optimizer.step()
-
-                loss_train[dataGens[pos_dg].sequence]["tot"].append(totLoss.item())
-                loss_train[dataGens[pos_dg].sequence]["pose"].append(poseLoss)
-                loss_train[dataGens[pos_dg].sequence]["rot"].append(rotLoss)
-
-            del inputs, labels, totLoss, poseLoss, rotLoss
-            gc.collect()
-            torch.cuda.empty_cache()
-        except StopIteration:
-            PM.printI("Loss Sequence[{dataGens[pos_dg].sequence}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-                np.mean(loss_train[dataGens[pos_dg].sequence]["tot"]),
-                np.mean(loss_train[dataGens[pos_dg].sequence]["pose"]),
-                np.mean(loss_train[dataGens[pos_dg].sequence]["rot"])
-                ))
-
-            dataGens.remove(dataGens[pos_dg])
-            outDisps.remove(outDisps[pos_dg])
-
-    train_elapsedT = time.time() - train_initT
-    loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
-        )/len(sequences))
-    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT))
-
-    return loss_train, train_elapsedT
-
-
-
-def trainEpochRandom_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
-    loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
-
-    PM.printI(bcolors.LIGHTYELLOW+"TRAINING"+bcolors.ENDC)
-    model.train()
-    model.training = True
-
-    train_initT = time.time()
-    rdg = RandomDataGeneretor(sequences, imageDir, 2, prepreocF=prepreocF, attach=True)
-    train_numOfBatch = rdg.maxIters-1
-    PB = PM.printProgressBarI(0, train_numOfBatch)
-    outputs = []
-
-    for inputs, labels, pos, seq, nb in rdg:
-        for i in range(nb):
-            torch.cuda.empty_cache()
-
-            model.zero_grad()
-
-            outputs = model(inputs[i])
-
-            totLoss = criterion(outputs, labels[i])
-            poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
-            rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
-
-            totLoss.backward()
-            optimizer.step()
-
-            loss_train[seq[i]]["tot"].append(totLoss.item())
-            loss_train[seq[i]]["pose"].append(poseLoss)
-            loss_train[seq[i]]["rot"].append(rotLoss)
-        del inputs, labels, totLoss, poseLoss, rotLoss
-        gc.collect()
-        torch.cuda.empty_cache()
-        PB.update(pos)
-    del rdg
-    gc.collect()
-    torch.cuda.empty_cache()
-
-    for s in sequences:
-        PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
-            np.mean(loss_train[s]["tot"]),
-            np.mean(loss_train[s]["pose"]),
-            np.mean(loss_train[s]["rot"])
-            ))
-
-    train_elapsedT = time.time() - train_initT
-    loss_train["tot"]["tot"].append(sum(
-        [np.mean(loss_train[seq]["tot"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["pose"].append(sum(
-        [np.mean(loss_train[seq]["pose"]) for seq in sequences]
-        )/len(sequences))
-    loss_train["tot"]["rot"].append(sum(
-        [np.mean(loss_train[seq]["rot"]) for seq in sequences]
-        )/len(sequences))
-    PM.printI("Loss Train: [tot: %.5f, pose: %.5f, rot: %.5f] , time %.2fs"%(
-        loss_train["tot"]["tot"][-1], loss_train["tot"]["pose"][-1], loss_train["tot"]["rot"][-1], train_elapsedT),
-        head="\n")
-
-    return loss_train, train_elapsedT
-
-
 class enumTrain(Enum):
-    online = "online"
     preprocessed = "preprocessed"
+    online = "online"
+
+    preprocessed_random = "preprocessed_random"
     online_random = "online_random"
+
+    preprocessed_random_RDG = "preprocessed_random_RDG"
     online_random_RDG = "online_random_RDG"
 
 
@@ -517,20 +677,32 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
         # Train the model
-        if type_train == enumTrain.online:
-            loss_train, train_elapsedT = trainEpoch(model, criterion, optimizer,
-                                                    imageDir, prepreocF, sequences=sequences_train)
-        elif type_train == enumTrain.preprocessed:
-            loss_train, train_elapsedT = trainEpochPreprocessed(model, criterion,
-                                                                optimizer, sequences=sequences_train)
+        if type_train == enumTrain.preprocessed:
+            loss_train, train_elapsedT = trainEP(model, criterion, optimizer,
+                                                                imageDir, prepreocF,
+                                                                sequences=sequences_train)
+        elif type_train == enumTrain.online:
+            loss_train, train_elapsedT = trainEO(model, criterion, optimizer,
+                                                    imageDir, prepreocF,
+                                                    sequences=sequences_train)
+        elif type_train == enumTrain.preprocessed_random:
+            loss_train, train_elapsedT = trainEPR(model, criterion, optimizer,
+                                                          imageDir, prepreocF,
+                                                          sequences=sequences_train)
         elif type_train == enumTrain.online_random:
-            loss_train, train_elapsedT = trainEpochRandom(model, criterion, optimizer,
-                                                          imageDir, prepreocF, sequences=sequences_train)
+            loss_train, train_elapsedT = trainEOR(model, criterion, optimizer,
+                                                          imageDir, prepreocF,
+                                                          sequences=sequences_train)
+        elif type_train == enumTrain.preprocessed_random_RDG:
+            loss_train, train_elapsedT = trainEPR_RDG(model, criterion, optimizer,
+                                                              imageDir, prepreocF,
+                                                              sequences=sequences_train)
         elif type_train == enumTrain.online_random_RDG:
-            loss_train, train_elapsedT = trainEpochRandom_RDG(model, criterion, optimizer,
-                                                              imageDir, prepreocF, sequences=sequences_train)
+            loss_train, train_elapsedT = trainEOR_RDG(model, criterion, optimizer,
+                                                              imageDir, prepreocF,
+                                                              sequences=sequences_train)
         else:
-            raise NotImplementedError
+            raise ValueError
 
 
         # Save the log file
@@ -567,14 +739,19 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
         # Test the model
-        if type_train == enumTrain.online or \
+        if type_train == enumTrain.preprocessed or \
+                type_train == enumTrain.preprocessed_random or \
+                type_train == enumTrain.preprocessed_random_RDG:
+            loss_test, test_elapsedT = testEP(model, criterion, optimizer,
+                                                             imageDir, prepreocF,
+                                                             sequences=sequences_test)
+        elif type_train == enumTrain.online or \
                 type_train == enumTrain.online_random or \
                 type_train == enumTrain.online_random_RDG:
-            loss_test, test_elapsedT = testEpoch(model, criterion, optimizer, imageDir, prepreocF,
+            loss_test, test_elapsedT = testEO(model, criterion, optimizer,
+                                                 imageDir, prepreocF,
                                                  sequences=sequences_test)
-        elif type_train == enumTrain.preprocessed:
-            loss_test, test_elapsedT = testEpochPreprocessed(model, criterion, optimizer,
-                                                             sequences=sequences_test)
+
         else:
             raise NotImplementedError
 
