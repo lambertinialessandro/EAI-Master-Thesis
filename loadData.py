@@ -2,7 +2,6 @@
 from abc import ABC, abstractmethod
 
 import os
-import math
 import numpy as np
 import torch
 
@@ -93,7 +92,7 @@ class AbstractDataGenerator(ABC):
         return imagesSet, posesSet
 
     def __str__(self):
-        return f"sequence {self.sequence}\n"+\
+        return bcolors.LIGHTYELLOW+f"sequence {self.sequence}\n"+bcolors.ENDC+\
                f"bachSize {self.bachSize}\n"+\
                f"numBatch {self.numBatch}\n"+\
                f"numImgs4Iter {self.numImgs4Iter}\n"+\
@@ -157,8 +156,7 @@ class DataGeneretorPreprocessed(AbstractDataGenerator):
         return imagesSet
 
     def __str__(self):
-        return super().__str__()+\
-               "\n" # TODO
+        return super().__str__()
 
 
 class DataGeneretorOnline(AbstractDataGenerator):
@@ -231,7 +229,6 @@ class DataGeneretorOnline(AbstractDataGenerator):
 
     def __str__(self):
         return super().__str__()+\
-               "\n"+\
                f"numImgs {self.numImgs}\n"
 
 
@@ -351,12 +348,12 @@ class RandomDataGeneretor():
         return imagesSet, posesSet
 
     def __str__(self):
-        return f"sequences {self.sequences}\n"+\
+        return bcolors.LIGHTYELLOW+"sequences "+bcolors.ENDC+f"{self.sequences}\n"+\
                f"maxPos {self.maxPos}\n\n"+\
                "dgToDo: \n"+\
-               ' '.join([f"{dg}\n\n" for dg in self.dgToDo])+\
+               ''.join([f"{dg}\n\n" for dg in self.dgToDo])+\
                "dgDone: \n"+\
-               ' '.join([f"{dg}\n\n" for dg in self.dgDone])
+               ''.join([f"{dg}\n\n" for dg in self.dgDone])
 
 
 ########### TODO
