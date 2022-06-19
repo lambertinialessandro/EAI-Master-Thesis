@@ -190,9 +190,9 @@ class PreprocessEnum(Enum):
     SOBEL = "SOBEL"
     CROPPING = "CROPPING"
 
-    QUAD_PURE = "QUAD_PURE"
-    QUAD_GRAY = "QUAD_GRAY"
-    QUAD_CED = "QUAD_CED" # CANNY_ENTOPY_DILATED
+    QUAT_PURE = "QUAT_PURE"
+    QUAT_GRAY = "QUAT_GRAY"
+    QUAT_CED = "QUAT_CED" # CANNY_ENTOPY_DILATED
 
 
 class PreprocessFactory():

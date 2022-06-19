@@ -679,28 +679,28 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
         # Train the model
         if type_train == enumTrain.preprocessed:
             loss_train, train_elapsedT = trainEP(model, criterion, optimizer,
-                                                                imageDir, prepreocF,
-                                                                sequences=sequences_train)
+                                                    imageDir, prepreocF,
+                                                    sequences=sequences_train)
         elif type_train == enumTrain.online:
             loss_train, train_elapsedT = trainEO(model, criterion, optimizer,
                                                     imageDir, prepreocF,
                                                     sequences=sequences_train)
         elif type_train == enumTrain.preprocessed_random:
             loss_train, train_elapsedT = trainEPR(model, criterion, optimizer,
-                                                          imageDir, prepreocF,
-                                                          sequences=sequences_train)
+                                                    imageDir, prepreocF,
+                                                    sequences=sequences_train)
         elif type_train == enumTrain.online_random:
             loss_train, train_elapsedT = trainEOR(model, criterion, optimizer,
-                                                          imageDir, prepreocF,
-                                                          sequences=sequences_train)
+                                                    imageDir, prepreocF,
+                                                    sequences=sequences_train)
         elif type_train == enumTrain.preprocessed_random_RDG:
             loss_train, train_elapsedT = trainEPR_RDG(model, criterion, optimizer,
-                                                              imageDir, prepreocF,
-                                                              sequences=sequences_train)
+                                                        imageDir, prepreocF,
+                                                        sequences=sequences_train)
         elif type_train == enumTrain.online_random_RDG:
             loss_train, train_elapsedT = trainEOR_RDG(model, criterion, optimizer,
-                                                              imageDir, prepreocF,
-                                                              sequences=sequences_train)
+                                                        imageDir, prepreocF,
+                                                        sequences=sequences_train)
         else:
             raise ValueError
 
@@ -712,7 +712,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
                                     f"{params.prefixFileNameLosses}{suffix}.txt")
             with open(fileName, "w") as f:
                 f.write("{}\n".format(str(loss_train)))
-            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss_{}".format(params.dir_History, suffix))+bcolors.ENDC)
         else:
             PM.printD(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
@@ -751,7 +751,6 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
             loss_test, test_elapsedT = testEO(model, criterion, optimizer,
                                                  imageDir, prepreocF,
                                                  sequences=sequences_test)
-
         else:
             raise NotImplementedError
 
@@ -763,7 +762,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
                                     f"{params.prefixFileNameLosses}{suffix}.txt")
             with open(fileName, "a") as f:
                 f.write("{}\n".format(str(loss_test)))
-            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss{}".format(params.dir_History, suffix))+bcolors.ENDC)
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss_{}".format(params.dir_History, suffix))+bcolors.ENDC)
         else:
             PM.printI(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
@@ -830,6 +829,9 @@ if __name__ == "__main__":
 
     type_train = enumTrain.preprocessed # preprocessed  online_random_RDG
 
-    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
+    for parameter in model.parameters():
+        PM.printI(str(parameter.size()))
+
+    #trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
 
 
