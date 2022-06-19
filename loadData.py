@@ -261,7 +261,7 @@ class RandomDataGeneretor():
         for s in sequences:
             if type_I == GeneratorType.PREPROCESS:
                 dg = DataGeneretorPreprocessed(prepreocF, s, imageDir, attach=False)
-            elif type_I == GeneratorType.PREPROCESS:
+            elif type_I == GeneratorType.ONLINE:
                 dg = DataGeneretorOnline(prepreocF, s, imageDir, attach=False)
             else:
                 raise ValueError

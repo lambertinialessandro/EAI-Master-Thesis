@@ -210,13 +210,13 @@ class PreprocessFactory():
             preprocess = CroppingPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
 
-        elif type_p == PreprocessEnum.QUAD_PURE:
+        elif type_p == PreprocessEnum.QUAT_PURE:
             preprocess = QuatPurePreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
-        elif type_p == PreprocessEnum.QUAD_GRAY:
+        elif type_p == PreprocessEnum.QUAT_GRAY:
             preprocess = QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
-        elif type_p == PreprocessEnum.QUAD_CED:
+        elif type_p == PreprocessEnum.QUAT_CED:
             preprocess = QuadCEDPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
 
