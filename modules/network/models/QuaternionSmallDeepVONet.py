@@ -28,7 +28,7 @@ class QuaternionSmallDeepVONet(nn.Module):
         # 6, 64, 128, 256, 512, 512, 1024
         # 2, 24,  48,  96, 192, 192, 384
 
-        self.block1 = QuatC_Block(2, 24, kernel_size=(7, 7), stride=(2, 2),
+        self.block1 = QuatC_Block(8, 24, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
         self.block2 = QuatC_Block(24, 48, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)

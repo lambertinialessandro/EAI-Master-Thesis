@@ -824,7 +824,7 @@ if __name__ == "__main__":
     typeOptimizer = NetworkFactory.OptimizerEnum.Adam
 
     model, criterion, optimizer = \
-        NetworkFactory.build(typeModel, params.DEVICE,
+        NetworkFactory.build(typeModel, params.DIM_LSTM, params.HIDDEN_SIZE_LSTM, params.DEVICE,
                              typeCriterion,
                              typeOptimizer)
 
