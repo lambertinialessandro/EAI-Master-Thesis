@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 import params
-from PreprocessModule import PreprocessEnum
+from modules.preprocess.PreprocessModule import PreprocessFactory
 from modules.utility import PM, bcolors, poseFile2poseRobot
 
 
@@ -105,11 +105,11 @@ class AbstractDataGenerator(ABC):
 
 
 class DataGeneretorPreprocessed(AbstractDataGenerator):
-    def __init__(self, suffixType, sequence, imageDir, attach=False):
+    def __init__(self, prepreocF, sequence, imageDir, attach=False):
         super().__init__(sequence, imageDir, attach=attach)
 
         # function to process the image
-        self.suffix = "_{}_{}_{}_loaded.npy".format(suffixType, params.WIDTH, params.HEIGHT)
+        self.suffix = prepreocF.suffix()
         self.numImgs = np.load(self.path2sequence + self.suffix, allow_pickle=False).shape[0]
 
 
@@ -244,7 +244,7 @@ class RandomDataGeneretor():
     step = params.STEP
     iters = len(params.trainingSeries)* params.RDG_ITER
 
-    def __init__(self, sequences, imageDir, type_I, suffixType=None, prepreocF=None, attach=False):
+    def __init__(self, sequences, imageDir, suffixType=None, prepreocF=None, attach=False):
         self.sequences = sequences
         self.attach = attach
 
@@ -254,10 +254,7 @@ class RandomDataGeneretor():
 
         self.dgToDo = []
         for s in sequences:
-            if type_I == 1:
-                dg = DataGeneretorPreprocessed(suffixType, s, imageDir, attach=False)
-            else:
-                dg = DataGeneretorOnline(prepreocF, s, imageDir, attach=False)
+            dg = DataGeneretorPreprocessed(prepreocF, s, imageDir, attach=False)
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
         self.maxIters = self.maxPos//self.iters

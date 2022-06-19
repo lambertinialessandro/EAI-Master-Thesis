@@ -80,8 +80,7 @@ def convertDataset(path_sequences, path_poses,
             imgs_N = len(x_files)
 
             for typePreproc in listTypePreproc:
-                suffix = "_{}_{}_{}_loaded.npy".format(*typePreproc.suffix())
-                pathFinalFile = os.path.join(dirSeq, imgsSeqName + suffix)
+                pathFinalFile = os.path.join(dirSeq, imgsSeqName + typePreproc.suffix())
 
                 if os.path.isfile(pathFinalFile):
                     PM.printD("Already converted ["+pathFinalFile+"]!!")
