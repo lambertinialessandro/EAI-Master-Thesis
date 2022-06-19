@@ -1,4 +1,5 @@
 
+from enum import Enum
 from abc import ABC, abstractmethod
 
 import os
@@ -232,6 +233,10 @@ class DataGeneretorOnline(AbstractDataGenerator):
                f"numImgs {self.numImgs}\n"
 
 
+class GeneratorType(Enum):
+    PREPROCESS = "PREPROCESS"
+    ONLINE = "ONLINE"
+
 class RandomDataGeneretor():
     path_sequences = params.path_sequences
     path_poses = params.path_poses
@@ -241,7 +246,10 @@ class RandomDataGeneretor():
     step = params.STEP
     iters = len(params.trainingSeries)* params.RDG_ITER
 
-    def __init__(self, sequences, imageDir, suffixType=None, prepreocF=None, attach=False):
+    GeneratorType = GeneratorType
+
+    def __init__(self, sequences, imageDir, type_I:GeneratorType,
+                 prepreocF, attach=False):
         self.sequences = sequences
         self.attach = attach
 
@@ -251,7 +259,13 @@ class RandomDataGeneretor():
 
         self.dgToDo = []
         for s in sequences:
-            dg = DataGeneretorPreprocessed(prepreocF, s, imageDir, attach=False)
+            if type_I == GeneratorType.PREPROCESS:
+                dg = DataGeneretorPreprocessed(prepreocF, s, imageDir, attach=False)
+            elif type_I == GeneratorType.PREPROCESS:
+                dg = DataGeneretorOnline(prepreocF, s, imageDir, attach=False)
+            else:
+                raise ValueError
+
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
         self.maxIters = self.maxPos//self.iters
@@ -533,6 +547,7 @@ if __name__ == "__main__":
     imgSize = (params.WIDTH, params.HEIGHT)
     prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED, imgSize)
     rdg = RandomDataGeneretor(["00", "01", "03", "04"], imageDir,
+                              RandomDataGeneretor.GeneratorType.PREPROCESS,
                               prepreocF=prepreocF, attach=False)
     PM.printD(str(rdg))
 
