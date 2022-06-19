@@ -15,8 +15,8 @@ from loadData import DataGeneretorOnline, RandomDataGeneretor, DataGeneretorPrep
     DataLoader, attach2Torch
 
 import params
-from PreprocessModule import PreprocessEnum
-from utility import PM, bcolors
+from modules.preprocess.PreprocessModule import PreprocessEnum
+from modules.utility import PM, bcolors
 
 
 def trainEpochPreprocessed(model, criterion, optimizer, sequences=params.trainingSeries):
