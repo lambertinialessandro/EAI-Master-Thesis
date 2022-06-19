@@ -34,7 +34,7 @@ class AbstractPreprocess(ABC):
         print(self.name)
 
     def suffix(self):
-        return self.name, self.imgSize[0], self.imgSize[1]
+        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_loaded.npy"
 
 
 
