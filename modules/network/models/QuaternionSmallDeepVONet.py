@@ -1,7 +1,7 @@
 
 import torch.nn as nn
 
-from modules.network.model.quaternionFunctions import QuaternionConv
+from modules.network.models.quaternionFunctions import QuaternionConv
 
 
 class QuatC_Block(nn.Module):

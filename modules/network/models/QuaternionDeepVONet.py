@@ -1,8 +1,8 @@
 
 import torch.nn as nn
 
-from modules.network.model.quaternionFunctions import QuaternionConv
-from modules.network.model.FSMModule import FSM
+from modules.network.models.quaternionFunctions import QuaternionConv
+from modules.network.models.FSMModule import FSM
 
 
 class QuatC_Block(nn.Module):

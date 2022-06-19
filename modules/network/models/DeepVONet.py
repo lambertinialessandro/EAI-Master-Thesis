@@ -1,7 +1,7 @@
 
 import torch.nn as nn
 
-from modules.network.FSMModule import FSM
+from modules.network.models.FSMModule import FSM
 
 
 class C_Block(nn.Module):

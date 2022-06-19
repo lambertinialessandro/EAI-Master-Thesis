@@ -1,7 +1,7 @@
 
 from enum import Enum
 
-import modules.network.model as mnm
+import modules.network.models as mnm
 from mnm.DeepVONet import DeepVONet, DeepVONet_FSM
 from mnm.SmallDeepVONet import SmallDeepVONet
 from mnm.QuaternionSmallDeepVONet import QuaternionSmallDeepVONet
