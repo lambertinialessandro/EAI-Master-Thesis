@@ -5,21 +5,21 @@ from modules.network.FSMModule import FSM
 
 
 class C_Block(nn.Module):
-  def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
-    super(C_Block, self).__init__()
+    def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
+        super(C_Block, self).__init__()
 
-    self.conv = nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride,
-                          padding=padding)
-    self.relu = nn.ReLU(inplace=True)
-    self.batch = nn.BatchNorm2d(out_ch)
-    self.drop = nn.Dropout(dropout_rate)
+        self.conv = nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride,
+                              padding=padding)
+        self.relu = nn.ReLU(inplace=True)
+        self.batch = nn.BatchNorm2d(out_ch)
+        self.drop = nn.Dropout(dropout_rate)
 
-  def forward(self, x):
-    x = self.conv(x)
-    x = self.relu(x)
-    x = self.batch(x)
-    x = self.drop(x)
-    return x
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.relu(x)
+        x = self.batch(x)
+        x = self.drop(x)
+        return x
 
 
 class DeepVONet(nn.Module):
@@ -28,21 +28,21 @@ class DeepVONet(nn.Module):
 
         self.block1 = C_Block(6, 64, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
-        self.block2 = C_Block (64, 128, kernel_size=(5, 5), stride=(2, 2),
+        self.block2 = C_Block(64, 128, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block3 = C_Block (128, 256, kernel_size=(5, 5), stride=(2, 2),
+        self.block3 = C_Block(128, 256, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block3_1 = C_Block (256, 256, kernel_size=(3, 3), stride=(1, 1),
+        self.block3_1 = C_Block(256, 256, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block4 = C_Block (256, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block4 = C_Block(256, 512, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block4_1 = C_Block (512, 512, kernel_size=(3, 3), stride=(1, 1),
+        self.block4_1 = C_Block(512, 512, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block5 = C_Block (512, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block5 = C_Block(512, 512, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block5_1 = C_Block (512, 512, kernel_size=(3, 3), stride=(1, 1),
+        self.block5_1 = C_Block(512, 512, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block6 = C_Block (512, 1024, kernel_size=(3, 3), stride=(2, 2),
+        self.block6 = C_Block(512, 1024, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
 
         self.flatten = nn.Flatten()
@@ -79,21 +79,21 @@ class DeepVONet_FSM(nn.Module):
 
         self.block1 = C_Block(6, 64, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
-        self.block2 = C_Block (64, 128, kernel_size=(5, 5), stride=(2, 2),
+        self.block2 = C_Block(64, 128, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block3 = C_Block (128, 256, kernel_size=(5, 5), stride=(2, 2),
+        self.block3 = C_Block(128, 256, kernel_size=(5, 5), stride=(2, 2),
                                padding=(2, 2), dropout_rate=0.2)
-        self.block3_1 = C_Block (256, 256, kernel_size=(3, 3), stride=(1, 1),
+        self.block3_1 = C_Block(256, 256, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block4 = C_Block (256, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block4 = C_Block(256, 512, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block4_1 = C_Block (512, 512, kernel_size=(3, 3), stride=(1, 1),
+        self.block4_1 = C_Block(512, 512, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block5 = C_Block (512, 512, kernel_size=(3, 3), stride=(2, 2),
+        self.block5 = C_Block(512, 512, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
-        self.block5_1 = C_Block (512, 512, kernel_size=(3, 3), stride=(1, 1),
+        self.block5_1 = C_Block(512, 512, kernel_size=(3, 3), stride=(1, 1),
                                  padding=(1, 1), dropout_rate=0.2)
-        self.block6 = C_Block (512, 1024, kernel_size=(3, 3), stride=(2, 2),
+        self.block6 = C_Block(512, 1024, kernel_size=(3, 3), stride=(2, 2),
                                padding=(1, 1), dropout_rate=0.2)
 
         self.fsm_block = FSM()
