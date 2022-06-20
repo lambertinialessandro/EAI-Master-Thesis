@@ -16,48 +16,50 @@ import modules.utility as utility
 from modules.utility import PM, bcolors
 
 
-def readImgsToList(path, files, N, typePreproc):
-    pos = 0
-    img1 = []
-    img2 = []
+def readImgsToList(path, files, typePreproc):
     imagesSet = []
-    h1, w1, c1 = 0, 0, 0
 
-    for f in files:
-        PM.printProgressBarI(pos, N)
-        img2 = typePreproc.processImage(os.path.join(path, f))
+    img1 = None
+    img2 = None
 
-        if pos > 0:
-            h1, w1, c1 = img1.shape
-            h2, w2, c2 = img1.shape
-            assert h1 == h2 and w1 == w2 and c1 == c2
+    pb = PM.printProgressBarI(0, len(files) - params.STEP - 1)
+    for pos in range(len(files) - params.STEP):
+        name = files[pos]
+        img1 = typePreproc.processImage(os.path.join(path, name))
 
-            img = np.concatenate([img1, img2], axis=-1)
-            imagesSet.append(img)
+        name = files[pos + params.STEP]
+        img2 = typePreproc.processImage(os.path.join(path, name))
 
-        img1 = img2
-        pos += 1
+        h1, w1, c1 = img1.shape
+        h2, w2, c2 = img2.shape
+        assert h1 == h2 and w1 == w2 and c1 == c2
 
-    PM.printProgressBarI(N, N)
-    return np.reshape(imagesSet, (-1, w1, h1, c1*2))
+        img = np.concatenate([img1, img2], axis=-1)
+        img = np.reshape(img, (-1, c1+c2, w1, h1))[0]
+        imagesSet.append(img)
+        pb.update(pos)
+    return imagesSet
 
 
-def readPosesFromFile(posesSet, N, path):
-    pose1 = []
-    pose2 = []
-
+def readPosesFromFile(path):
+    loadedPoses = []
+    posesSet = []
     with open(path, 'r') as f:
-        for pos in range(N):
-            PM.printProgressBarI(pos, N)
-            posef = np.fromstring(f.readline(), dtype=float, sep=' ')
-            pose2 = utility.poseFile2poseRobot(posef)
+        for line in f:
+            posef = np.fromstring(line, dtype=float, sep=' ')
+            pose = utility.poseFile2poseRobot(posef)
+            loadedPoses.append(pose)
 
-            if pos > 0:
-                pose = pose2-pose1
-                posesSet.append(pose)
+    pose1 = None
+    pose2 = None
+    pb = PM.printProgressBarI(0, len(loadedPoses) - params.STEP)
+    for pos in range(len(loadedPoses) - params.STEP):
+        pose1 = loadedPoses[pos]
+        pose2 = loadedPoses[pos + params.STEP]
 
-            pose1 = pose2
-        PM.printProgressBarI(N, N)
+        pose = pose2-pose1
+        posesSet.append(pose)
+        pb.update(pos)
 
 
 def convertDataset(path_sequences, path_poses,
@@ -88,7 +90,7 @@ def convertDataset(path_sequences, path_poses,
                     PM.printD("Converting --> ["+pathFinalFile+"]")
                     initT = time.time()
 
-                    imagesSet = readImgsToList(imgsSeq, x_files, imgs_N, typePreproc)
+                    imagesSet = readImgsToList(imgsSeq, x_files, typePreproc)
                     PM.printD("Saving on file: "+pathFinalFile)
                     np.save(pathFinalFile, imagesSet, allow_pickle=False)
                     elapsedT = time.time() - initT
@@ -97,7 +99,7 @@ def convertDataset(path_sequences, path_poses,
                 PM.printI(bcolors.DARKGREEN+"Done: "+pathFinalFile+bcolors.ENDC)
 
 
-        poseFileName = os.path.join(path_poses, dirSeqName+"_pose_loaded.npy")
+        poseFileName = os.path.join(path_poses, dirSeqName+f"_pose_{params.STEP}_loaded.npy")
         if os.path.isfile(poseFileName):
             PM.printD("Already converted [poses/"+dirSeqName+".txt]!!")
             PM.printI(bcolors.DARKGREEN+"Done: "+poseFileName+bcolors.ENDC)
@@ -105,10 +107,9 @@ def convertDataset(path_sequences, path_poses,
             PM.printD("Converting --> [poses/"+dirSeqName+".txt]")
             initT = time.time()
 
-            posesSet = []
             fileName = os.path.join(path_poses, dirSeqName+'.txt')
             if os.path.isfile(fileName):
-                readPosesFromFile(posesSet, imgs_N, fileName)
+                posesSet = readPosesFromFile(fileName)
 
                 PM.printD("Saving on file: "+poseFileName)
                 np.save(poseFileName, posesSet, allow_pickle=False)
