@@ -79,17 +79,15 @@ class AbstractDataGenerator(ABC):
     def _load_images(self, pos, nb):
         pass
 
-    def _attach2Torch(self, imagesSet, posesSet):
-        imagesSet = [torch.FloatTensor(imagesSet).to(params.DEVICE)]
-        posesSet = [torch.FloatTensor(posesSet).to(params.DEVICE)]
+    def _attach2Torch(self, imagesSet, posesSet, flip=True):
+        imagesSet = torch.FloatTensor(imagesSet).to(params.DEVICE)
+        posesSet = torch.FloatTensor(posesSet).to(params.DEVICE)
 
-        nb, bb, hh, ww, cc = imagesSet[0].size()
-        nb2, bb2, pp = posesSet[0].size()
+        nb, bb, hh, ww, cc = imagesSet.size()
+        nb2, bb2, pp = posesSet.size()
         assert nb == nb2 and bb == bb2
-
-        imagesSet = torch.stack(imagesSet).view(-1, bb, cc, ww, hh)
-        posesSet = torch.stack(posesSet).view(-1, bb, pp)
-
+        #imagesSet = torch.stack(imagesSet).view(-1, bb, cc, ww, hh)
+        #posesSet = torch.stack(posesSet).view(-1, bb, pp)
         return imagesSet, posesSet
 
     def __str__(self):
@@ -111,7 +109,6 @@ class DataGeneretorPreprocessed(AbstractDataGenerator):
         # function to process the image
         self.suffix = prepreocF.suffix()
         self.numImgs = np.load(self.path2sequence + self.suffix, allow_pickle=False).shape[0]
-
 
     def __next__(self):
         if self.currPos > self.maxPos:
@@ -137,7 +134,7 @@ class DataGeneretorPreprocessed(AbstractDataGenerator):
         self.currPos = self.currPos + 1
 
         if self.attach:
-            imagesSet, posesSet = self._attach2Torch(imagesSet, posesSet)
+            imagesSet, posesSet = self._attach2Torch(imagesSet, posesSet, flip=False)
         return imagesSet, posesSet, pos, nb
 
     def _load_images(self, pos, nb):
@@ -224,6 +221,7 @@ class DataGeneretorOnline(AbstractDataGenerator):
                 assert h1 == h2 and w1 == w2 and c1 == c2
 
                 img = np.concatenate([img1, img2], axis=-1)
+                img = np.reshape(img, (-1, c1+c2, w1, h1))[0]
                 imagesSet[i].append(img)
 
         return np.array(imagesSet)
@@ -349,15 +347,12 @@ class RandomDataGeneretor():
         return imagesSet, posesSet, pos, seq, nb
 
     def _attach2Torch(self, imagesSet, posesSet):
-        imagesSet = [torch.FloatTensor(imagesSet).to(params.DEVICE)]
-        posesSet = [torch.FloatTensor(posesSet).to(params.DEVICE)]
+        imagesSet = torch.FloatTensor(imagesSet).to(params.DEVICE)
+        posesSet = torch.FloatTensor(posesSet).to(params.DEVICE)
 
-        nb, bb, cc, ww, hh = imagesSet[0].size() # ([20, 10, 2, 320, 96])  ([20, 10, 2, 320, 96])
-        nb2, bb2, pp = posesSet[0].size()
+        nb, bb, hh, ww, cc = imagesSet.size()
+        nb2, bb2, pp = posesSet.size()
         assert nb == nb2 and bb == bb2
-
-        imagesSet = torch.stack(imagesSet).view(-1, bb, cc, ww, hh) # ([20, 10, 2, 320, 96]) ([20, 10, 2, 320, 96])
-        posesSet = torch.stack(posesSet).view(-1, bb, pp)
 
         return imagesSet, posesSet
 
