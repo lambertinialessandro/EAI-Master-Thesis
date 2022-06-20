@@ -1,21 +1,27 @@
 
 # FROM nvidia/cuda:11.4.0-cudnn8-runtime-ubuntu18.04
-FROM nvidia/cuda:11.5.1-base-ubuntu20.04
+# FROM nvidia/cuda:11.7.0-cudnn8-runtime-ubuntu20.04
+# FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
+# FROM nvidia/cuda:11.5.1-base-ubuntu20.04
+# FROM nvidia/cuda:11.6.2-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:11.0.3-devel-ubuntu20.04
 
 MAINTAINER lambertini and landini <lambertini.1938390@studenti.uniroma1.it>
 
 ### RUN executed when build
-# RUN apt-get update && apt-get install -y python3 python3-pip sudo
+RUN apt-get update && apt-get install -y python3 python3-pip sudo
 
 # create dir and copy all the code
 RUN mkdir -p /home/app
 COPY . /home/app
 
 # installing all the requred libraries
-RUN cd /home/app/ && pip3 install -r requirements.txt
-
 #setting workdir
 WORKDIR /home/app/
+
+RUN pip3 install -r requirements.txt
+
+
 
 ### CMD execute when run
 
@@ -37,8 +43,12 @@ CMD ls -la
 # 	docker build -t deep_vo:1.0 .
 
 #	docker run dockerID
-#	docker run --gpus 1 -ti dockerID python3 main.py
-#	docker run --gpus 1 --ipc=host -ti dockerID python3 main.py
+#	docker run dockerID -v path-source-esterna:path-destination-docker
+#	docker run --gpus all -ti dockerID python3 main.py
+#	docker run --gpus all --ipc=host -ti dockerID python3 main.py
 
 
-# docker 
+#	docker images
+#	docker ps
+#	docker stop
+#	docker rmi -f dockerID
