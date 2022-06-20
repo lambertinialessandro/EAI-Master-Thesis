@@ -15,7 +15,6 @@ from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataG
     DataLoader, attach2Torch
 
 import params
-from modules.preprocess.PreprocessModule import PreprocessEnum
 from modules.utility import PM, bcolors
 
 
@@ -208,7 +207,7 @@ def trainEPR(model, criterion, optimizer, imageDir, prepreocF, sequences=params.
     for sequence in sequences:
         dataGens.append(DataGeneretorPreprocessed(prepreocF, sequence, imageDir, attach=True))
         PM.printI(bcolors.LIGHTGREEN+f"sequence: {sequence}"+bcolors.ENDC)
-        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
+        outDisps.append(PM.printProgressBarI(0, dataGens[-1].numBatchImgs-1))
 
     while len(dataGens) > 0:
         pos_dg = random.randint(0, len(dataGens)-1)
@@ -278,7 +277,7 @@ def trainEOR(model, criterion, optimizer, imageDir, prepreocF, sequences=params.
     for sequence in sequences:
         dataGens.append(DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True))
         PM.printI(bcolors.LIGHTGREEN+f"sequence: {sequence}"+bcolors.ENDC)
-        outDisps.append(PM.HTMLProgressBarI(0, dataGens[-1].numBatchImgs-1))
+        outDisps.append(PM.printProgressBarI(0, dataGens[-1].numBatchImgs-1))
 
     while len(dataGens) > 0:
         pos_dg = random.randint(0, len(dataGens)-1)
@@ -473,13 +472,14 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
     test_initT = time.time()
     for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        X, y = DataLoader(params.dir_Dataset, attach=False, suffixType=params.suffixType, sequence=sequence)
+        X, y = DataLoader(params.dir_Dataset, attach=False, #TODO
+                          suffixType=params.suffixType, sequence=sequence)
         test_numOfBatch = int(len(X)/params.BACH_SIZE)-1
         PB = PM.printProgressBarI(0, test_numOfBatch)
         outputs = []
 
         for i in range(test_numOfBatch):
-            inputs, labels = attach2Torch(
+            inputs, labels = attach2Torch( #TODO
                     X[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE],
                     y[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE]
                 )
@@ -804,10 +804,13 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
 if __name__ == "__main__":
-    from NetworkModule import NetworkFactory
+    from modules.network.NetworkModule import NetworkFactory
+    from modules.preprocess.PreprocessModule import PreprocessFactory
 
     imageDir = "image_2"
-    prepreocF = PreprocessEnum.SOBEL((params.WIDTH, params.HEIGHT)) # UNCHANGED SOBEL
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+                                        (params.WIDTH, params.HEIGHT))
+        # UNCHANGED SOBEL
 
     PM.printD(f"[{params.BASE_EPOCH}-{params.BASE_EPOCH + params.NUM_EPOCHS-1}]\n")
 
@@ -818,7 +821,7 @@ if __name__ == "__main__":
     except NameError:
         pass
 
-    typeModel = NetworkFactory.ModelEnum.SmallDeepVONet # DeepVONet, SmallDeepVONet
+    typeModel = NetworkFactory.ModelEnum.DeepVONet # DeepVONet, SmallDeepVONet
     typeCriterion = NetworkFactory.CriterionEnum.MSELoss
     typeOptimizer = NetworkFactory.OptimizerEnum.Adam
 
@@ -827,11 +830,14 @@ if __name__ == "__main__":
                              typeCriterion,
                              typeOptimizer)
 
-    type_train = enumTrain.preprocessed # preprocessed  online_random_RDG
+    type_train = enumTrain.online_random_RDG
+        # preprocessed  preprocessed_random  preprocessed_random_RDG
+        # online  online_random  online_random_RDG
 
-    for parameter in model.parameters():
-        PM.printI(str(parameter.size()))
+    # for parameter in model.parameters():
+    #     PM.printI(str(parameter.size()))
 
-    #trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
+    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
+    print()
 
 
