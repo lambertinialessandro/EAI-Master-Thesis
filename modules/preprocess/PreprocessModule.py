@@ -11,7 +11,7 @@ from skimage.filters.rank import entropy
 
 from abc import ABC, abstractmethod
 
-
+import params
 from modules.utility import PM
 
 
@@ -34,7 +34,7 @@ class AbstractPreprocess(ABC):
         print(self.name)
 
     def suffix(self):
-        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_loaded.npy"
+        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_{params.STEP}_loaded.npy"
 
 
 
