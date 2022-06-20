@@ -4,16 +4,15 @@ from enum import Enum
 import cv2
 import numpy as np
 from PIL import Image
-"""
 from scipy.ndimage import grey_dilation, grey_erosion
 from skimage.util import img_as_ubyte
 from skimage.morphology import disk
 from skimage.filters.rank import entropy
-"""
 
 from abc import ABC, abstractmethod
 
-from utility import PM
+
+from modules.utility import PM
 
 
 class AbstractPreprocess(ABC):
@@ -34,37 +33,38 @@ class AbstractPreprocess(ABC):
     def printName(self):
         print(self.name)
 
+    def suffix(self):
+        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_loaded.npy"
+
 
 
 class UnchangedPreprocess(AbstractPreprocess):
     name = "UNCHANGED"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image)
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
-        im = cv2.resize(im, self.imgSize, self.interpolation);
+        im = cv2.resize(im, self.imgSize, self.interpolation)
         return im
 
 
 class SobelPreprocess(AbstractPreprocess):
     name = "SOBEL"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image)
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
-        im = cv2.resize(im, self.imgSize, self.interpolation);
+        im = cv2.resize(im, self.imgSize, self.interpolation)
 
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
@@ -86,9 +86,8 @@ class SobelPreprocess(AbstractPreprocess):
 class CroppingPreprocess(AbstractPreprocess):
     name = "CROPPING"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image)
@@ -115,9 +114,8 @@ class CroppingPreprocess(AbstractPreprocess):
 class QuatPurePreprocess(AbstractPreprocess):
     name = "QUAT_PURE"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image[:, :, 1:4])
@@ -129,16 +127,15 @@ class QuatPurePreprocess(AbstractPreprocess):
         imBlack = np.zeros((h, w, 1), np.uint8)
 
         quatImg = np.concatenate((imBlack, imRGB), 2)
-        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
+        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
         return quatImg
 
 
 class QuatGrayPreprocess(AbstractPreprocess):
     name = "QUAT_GRAY"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image[:, :, 1:4])
@@ -150,16 +147,15 @@ class QuatGrayPreprocess(AbstractPreprocess):
         imGray = np.reshape(cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY), (h, w, 1))
 
         quatImg = np.concatenate((imGray, imRGB), 2)
-        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
+        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
         return quatImg
 
-"""
+
 class QuadCEDPreprocess(AbstractPreprocess):
     name = "QUAT_CED"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED,
-                 interpolation=cv2.INTER_AREA):
-        super().__init__(imgSize, imreadFlag, interpolation)
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
 
     def printImage(self, image):
         PM.imshowD(image[:, :, 1:4])
@@ -167,7 +163,7 @@ class QuadCEDPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         imRGB = cv2.imread(imgPath, self.imreadFlag)
-        imRGB = cv2.resize(imRGB, (1241, 376), interpolation = self.interpolation);
+        imRGB = cv2.resize(imRGB, (1241, 376), interpolation = self.interpolation)
         imGray = cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY)
 
         canny_img = cv2.Canny(np.array(imRGB), 100, 200)
@@ -185,47 +181,77 @@ class QuadCEDPreprocess(AbstractPreprocess):
 
         im_CED = np.reshape(dilated, (376, 1241, 1))
         quatImg = np.concatenate((im_CED, imRGB), 2)
-        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation);
+        quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
         return quatImg
-"""
-
 
 
 class PreprocessEnum(Enum):
-    UNCHANGED = UnchangedPreprocess
-    SOBEL = SobelPreprocess
-    CROPPING = CroppingPreprocess
+    UNCHANGED = "UNCHANGED"
+    SOBEL = "SOBEL"
+    CROPPING = "CROPPING"
 
-    QUAD_PURE = QuatPurePreprocess
-    QUAD_GRAY = QuatGrayPreprocess
-    # QUAD_CED = QuadCEDPreprocess # CANNY_ENTOPY_DILATED
+    QUAT_PURE = "QUAT_PURE"
+    QUAT_GRAY = "QUAT_GRAY"
+    QUAT_CED = "QUAT_CED" # CANNY_ENTOPY_DILATED
 
-    def __call__(self, *args, **kargs):
-        return self.value(*args, **kargs)
-"""
-    def listPreproc(imgSize):
-        return [EnumPreproc.UNCHANGED(imgSize), EnumPreproc.CROPPING(imgSize)]
-    def listQuatPreproc(imgSize):
-        return [EnumPreproc.QUAD_PURE(imgSize), EnumPreproc.QUAD_GRAY(imgSize), EnumPreproc.QUAD_CED(imgSize)]
 
-    def listAllPreproc(imgSize):
-        return [*EnumPreproc.listPreproc(imgSize), *EnumPreproc.listQuatPreproc(imgSize)]
-"""
+class PreprocessFactory():
+    PreprocessEnum = PreprocessEnum
+
+    def build(type_p: PreprocessEnum,
+              imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+        if type_p == PreprocessEnum.UNCHANGED:
+            preprocess = UnchangedPreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+        elif type_p == PreprocessEnum.SOBEL:
+            preprocess = SobelPreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+        elif type_p == PreprocessEnum.CROPPING:
+            preprocess = CroppingPreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+
+        elif type_p == PreprocessEnum.QUAT_PURE:
+            preprocess = QuatPurePreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+        elif type_p == PreprocessEnum.QUAT_GRAY:
+            preprocess = QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+        elif type_p == PreprocessEnum.QUAT_CED:
+            preprocess = QuadCEDPreprocess(imgSize, imreadFlag=imreadFlag,
+                                             interpolation=interpolation)
+
+        else:
+            raise ValueError
+
+        return preprocess
+
+    def listPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+        return [UnchangedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                SobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                CroppingPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                ]
+    def listQuatPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+        return [QuatPurePreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                QuadCEDPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                ]
+
+    def listAllPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+        return [*PreprocessFactory.listPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                *PreprocessFactory.listQuatPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation)]
+
 
 def main():
-    imgPath = "./000000.png"
+    PM.setFlags(True, True, False)
+
+    imgPath = "./Dataset/sequences/00/image_2/000000.png"
     imgSize = (256, 256)
 
-    ffs = [PreprocessEnum.UNCHANGED,
-           PreprocessEnum.CROPPING,
-           PreprocessEnum.QUAD_PURE,
-           PreprocessEnum.QUAD_GRAY,
-           PreprocessEnum.QUAD_CED]
+    ffs = PreprocessFactory.listAllPreproc(imgSize)
 
     for ff in ffs:
-        ff = PreprocessEnum.UNCHANGED(imgSize)
         im = ff.processImage(imgPath)
-        print(ff.printName())
+        ff.printName()
         print(im.shape)
         ff.printImage(im)
 

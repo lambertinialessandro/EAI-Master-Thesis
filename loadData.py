@@ -1,45 +1,14 @@
 
+from enum import Enum
 from abc import ABC, abstractmethod
 
 import os
-import math
 import numpy as np
 import torch
 
 import params
-from PreprocessModule import PreprocessEnum
-from utility import PM, bcolors
-
-# TODO
-def isRotationMatrix(R):
-    n_R = np.linalg.norm(
-              np.identity(3, dtype = R.dtype) - np.dot(np.transpose(R), R)
-          )
-    return n_R < 1e-6
-# TODO
-def rotationMatrix2EulerAngles(R):
-    assert(isRotationMatrix(R))
-
-    sy = math.sqrt(R[0,0]*R[0,0] + R[1,0]*R[1,0])
-    if  sy < 1e-6:
-        x = math.atan2(-R[1,2], R[1,1])
-        y = math.atan2(-R[2,0], sy)
-        z = 0
-    else:
-        x = math.atan2(R[2,1] , R[2,2])
-        y = math.atan2(-R[2,0], sy)
-        z = math.atan2(R[1,0], R[0,0])
-
-    return np.array([x, y, z])
-# TODO
-def poseFile2poseRobot(posef):
-    p = np.array([posef[3], posef[7], posef[11]])
-    R = np.array([[posef[0], posef[1], posef[2]],
-                  [posef[4], posef[5], posef[6]],
-                  [posef[8], posef[9], posef[10]]])
-
-    angles = rotationMatrix2EulerAngles(R)
-    return np.concatenate((p, angles))
+from modules.preprocess.PreprocessModule import PreprocessFactory
+from modules.utility import PM, bcolors, poseFile2poseRobot
 
 
 class AbstractDataGenerator(ABC):
@@ -124,7 +93,7 @@ class AbstractDataGenerator(ABC):
         return imagesSet, posesSet
 
     def __str__(self):
-        return f"sequence {self.sequence}\n"+\
+        return bcolors.LIGHTYELLOW+f"sequence {self.sequence}\n"+bcolors.ENDC+\
                f"bachSize {self.bachSize}\n"+\
                f"numBatch {self.numBatch}\n"+\
                f"numImgs4Iter {self.numImgs4Iter}\n"+\
@@ -136,11 +105,11 @@ class AbstractDataGenerator(ABC):
 
 
 class DataGeneretorPreprocessed(AbstractDataGenerator):
-    def __init__(self, suffixType, sequence, imageDir, attach=False):
+    def __init__(self, prepreocF, sequence, imageDir, attach=False):
         super().__init__(sequence, imageDir, attach=attach)
 
         # function to process the image
-        self.suffix = "_{}_{}_{}_loaded.npy".format(suffixType, params.WIDTH, params.HEIGHT)
+        self.suffix = prepreocF.suffix()
         self.numImgs = np.load(self.path2sequence + self.suffix, allow_pickle=False).shape[0]
 
 
@@ -188,8 +157,7 @@ class DataGeneretorPreprocessed(AbstractDataGenerator):
         return imagesSet
 
     def __str__(self):
-        return super().__str__()+\
-               "\n" # TODO
+        return super().__str__()
 
 
 class DataGeneretorOnline(AbstractDataGenerator):
@@ -262,9 +230,12 @@ class DataGeneretorOnline(AbstractDataGenerator):
 
     def __str__(self):
         return super().__str__()+\
-               "\n"+\
                f"numImgs {self.numImgs}\n"
 
+
+class GeneratorType(Enum):
+    PREPROCESS = "PREPROCESS"
+    ONLINE = "ONLINE"
 
 class RandomDataGeneretor():
     path_sequences = params.path_sequences
@@ -275,7 +246,10 @@ class RandomDataGeneretor():
     step = params.STEP
     iters = len(params.trainingSeries)* params.RDG_ITER
 
-    def __init__(self, sequences, imageDir, type_I, suffixType=None, prepreocF=None, attach=False):
+    GeneratorType = GeneratorType
+
+    def __init__(self, sequences, imageDir, type_I:GeneratorType,
+                 prepreocF, attach=False):
         self.sequences = sequences
         self.attach = attach
 
@@ -285,10 +259,13 @@ class RandomDataGeneretor():
 
         self.dgToDo = []
         for s in sequences:
-            if type_I == 1:
-                dg = DataGeneretorPreprocessed(suffixType, s, imageDir, attach=False)
-            else:
+            if type_I == GeneratorType.PREPROCESS:
+                dg = DataGeneretorPreprocessed(prepreocF, s, imageDir, attach=False)
+            elif type_I == GeneratorType.ONLINE:
                 dg = DataGeneretorOnline(prepreocF, s, imageDir, attach=False)
+            else:
+                raise ValueError
+
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
         self.maxIters = self.maxPos//self.iters
@@ -385,12 +362,12 @@ class RandomDataGeneretor():
         return imagesSet, posesSet
 
     def __str__(self):
-        return f"sequences {self.sequences}\n"+\
+        return bcolors.LIGHTYELLOW+"sequences "+bcolors.ENDC+f"{self.sequences}\n"+\
                f"maxPos {self.maxPos}\n\n"+\
                "dgToDo: \n"+\
-               ' '.join([f"{dg}\n\n" for dg in self.dgToDo])+\
+               ''.join([f"{dg}\n\n" for dg in self.dgToDo])+\
                "dgDone: \n"+\
-               ' '.join([f"{dg}\n\n" for dg in self.dgDone])
+               ''.join([f"{dg}\n\n" for dg in self.dgDone])
 
 
 ########### TODO
@@ -499,165 +476,79 @@ def DataLoader(datapath, attach=True, suffixType="", sequence='00'):
 
 ########### TODO
 
-def main():
-    import gc
-    import random
 
-    PM.printI(bcolors.DARKYELLOW+"Loading Data"+bcolors.ENDC+" ###")
+if __name__ == "__main__":
+    import params
+    PM.setFlags(True, True, False)
+
+
+    PM.printD(bcolors.DARKGREEN+"Dataset analysis"+bcolors.ENDC+" ###")
     sequences = os.listdir(params.path_sequences)[0:11]
     num_seq = len(sequences)
     perc_train = 0.7
     num_train = round(num_seq * perc_train)
     num_test = num_seq - num_train
 
-    PM.printI("Num seq Tot: {}".format(num_seq))
-    PM.printI("Num seq Train: {} ({}%)".format(num_train, round(perc_train*100)))
-    PM.printI("Train sequences: {}".format(params.trainingSeries))
-    PM.printI("Num seq Test: {} ({}%)".format(num_test, round((1-perc_train)*100)))
-    PM.printI("Test sequences: {}\n".format(params.testingSeries))
+    PM.printD("Num seq Tot: {}".format(num_seq))
+    PM.printD("Num seq Train: {} ({}%)".format(num_train, round(perc_train*100)))
+    PM.printD("Train sequences: {}".format(params.trainingSeries))
+    PM.printD("Num seq Test: {} ({}%)".format(num_test, round((1-perc_train)*100)))
+    PM.printD("Test sequences: {}\n".format(params.testingSeries))
 
+
+    PM.printD(bcolors.DARKGREEN+"Preprocess Online UNCHANGED"+bcolors.ENDC+" ###")
     sequence = "04"
     imageDir = "image_2"
-    prepreocF = PreprocessEnum.UNCHANGED((params.WIDTH, params.HEIGHT))
-    # prepreocF = EnumPreproc.QUAD_CED((params.WIDTH, params.HEIGHT))
-    # prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
-
-
-
-
-    rdg = RandomDataGeneretor(prepreocF, ["00", "01", "03", "04"], imageDir, attach=False)
-    print(rdg)
-
-    for imageBatchSet, posesBatchSet, pos, seq, nb in rdg:
-        print(f"pos: {pos}")
-        print(f"imageBatchSet: {imageBatchSet.shape}")
-        print(f"posesBatchSet: {posesBatchSet.shape}")
-        for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
-            print(f"imagesSet: {imagesSet.shape}")
-            print(f"posesSet: {posesSet.shape}")
-            for image, pose in zip(imagesSet, posesSet):
-                print(pose)
-                prepreocF.printImage(image[:, :, 0:3])
-                prepreocF.printImage(image[:, :, 3:6])
-                break
-            break
-
-
-
-    dataGens = []
-    for s in params.trainingSeries:
-        dataGens.append(DataGeneretorOnline(prepreocF, s, imageDir, attach=False))
-
-    while len(dataGens) > 0:
-        pos = random.randint(0, len(dataGens)-1)
-
-        try:
-            imageBatchSet, posesBatchSet, pos, nb = dataGens[pos].__next__()
-
-            print(f"pos: {pos}")
-            print(f"nb: {nb}")
-            print(f"imageBatchSet: {imageBatchSet.shape}")
-            print(f"posesBatchSet: {posesBatchSet.shape}")
-            for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
-                print(f"imagesSet: {imagesSet.shape}")
-                print(f"posesSet: {posesSet.shape}")
-                for image, pose in zip(imagesSet, posesSet):
-                    #print(pose)
-                    prepreocF.printImage(image[:, :, 0:3])
-                    prepreocF.printImage(image[:, :, 3:6])
-                    break
-                break
-        except StopIteration:
-            dataGens.remove(dataGens[pos])
-
-
-    return
-
-    for dg in dataGens:
-        print(f"numImgs: {dg.numImgs}")
-        print(f"maxPos: {dg.maxPos}")
-        print(f"numImgs4Iter: {dg.numImgs4Iter}")
-        print(f"real num imgs: {dg.maxPos*dg.numImgs4Iter}")
-
-        imageBatchSet, posesBatchSet, pos, nb = dg.__next__()
-        print(f"pos: {pos}")
-        print(f"imageBatchSet: {imageBatchSet.shape}")
-        print(f"posesBatchSet: {posesBatchSet.shape}")
-        for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
-            print(f"imagesSet: {imagesSet.shape}")
-            print(f"posesSet: {posesSet.shape}")
-            for image, pose in zip(imagesSet, posesSet):
-                #print(pose)
-                prepreocF.printImage(image[:, :, 0:3])
-                prepreocF.printImage(image[:, :, 3:6])
-                break
-            break
-    del dataGens
-    gc.collect()
-
+    imgSize = (params.WIDTH, params.HEIGHT)
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED, imgSize)
     dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=False)
-    print(f"numImgs: {dg.numImgs}")
-    print(f"maxPos: {dg.maxPos}")
-    print(f"numImgs4Iter: {dg.numImgs4Iter}")
-    print(f"real num imgs: {dg.maxPos*dg.numImgs4Iter}")
+    PM.printD(f"numImgs: {dg.numImgs}")
+    PM.printD(f"maxPos: {dg.maxPos}")
+    PM.printD(f"numImgs4Iter: {dg.numImgs4Iter}")
+    PM.printD(f"real num imgs: {dg.maxPos*dg.numImgs4Iter}")
 
     try:
         for imageBatchSet, posesBatchSet, pos, nb in dg:
-            print(f"pos: {pos}")
-            print(f"imageBatchSet: {imageBatchSet.shape}")
-            print(f"posesBatchSet: {posesBatchSet.shape}")
+            PM.printD(f"pos: {pos}")
+            PM.printD(f"imageBatchSet: {imageBatchSet.shape}")
+            PM.printD(f"posesBatchSet: {posesBatchSet.shape}")
             for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
-                print(f"imagesSet: {imagesSet.shape}")
-                print(f"posesSet: {posesSet.shape}")
+                PM.printD(f"imagesSet: {imagesSet.shape}")
+                PM.printD(f"posesSet: {posesSet.shape}")
                 for image, pose in zip(imagesSet, posesSet):
                     #print(pose)
                     prepreocF.printImage(image[:, :, 0:3])
                     prepreocF.printImage(image[:, :, 3:6])
                     break
                 break
-            # break
+            print()
+            break
     except KeyboardInterrupt:
         pass
     finally:
         pass
 
-    dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
-    print(f"numImgs: {dg.numImgs}")
-    print(f"maxPos: {dg.maxPos}")
-    print(f"numImgs4Iter: {dg.numImgs4Iter}")
-    print(f"real num imgs: {dg.maxPos*dg.numImgs4Iter}")
 
-    try:
-        for imageBatchSet, posesBatchSet, pos, nb in dg:
-            print(f"pos: {pos}")
-            print(f"imageBatchSet: {imageBatchSet.shape}")
-            print(f"posesBatchSet: {posesBatchSet.shape}")
-            for imagesSet, posesSet in zip(imageBatchSet, posesBatchSet):
-                print(f"imagesSet: {imagesSet.shape}")
-                print(f"posesSet: {posesSet.shape}")
-                for image, pose in zip(imagesSet, posesSet):
-                    #print(pose)
-                    #prepreocF.printImage(image[:, :, 0:3])
-                    break
-                break
-            # break
-    except KeyboardInterrupt:
-        pass
-    finally:
-        pass
-
-def main2():
-    suffixType = "SOBEL"
+    PM.printD(bcolors.DARKGREEN+"Preprocess Preprocessed sobel, Print shape imageBatchSet"+bcolors.ENDC)
     sequence = "04"
     imageDir = "image_2"
-
-    dgp = DataGeneretorPreprocessed(suffixType, sequence, imageDir, attach=False)
+    imgSize = (params.WIDTH, params.HEIGHT)
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL, imgSize)
+    dgp = DataGeneretorPreprocessed(prepreocF, sequence, imageDir, attach=False)
 
     for imageBatchSet, posesBatchSet, pos, nb in dgp:
-        print(imageBatchSet.shape)
+        PM.printD(str(imageBatchSet.shape))
+    print()
 
 
-if __name__ == "__main__":
-    main2()
+    PM.printD(bcolors.DARKGREEN+"RandomDataGeneretor informations"+bcolors.ENDC+" ###")
+    sequence = "04"
+    imageDir = "image_2"
+    imgSize = (params.WIDTH, params.HEIGHT)
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED, imgSize)
+    rdg = RandomDataGeneretor(["00", "01", "03", "04"], imageDir,
+                              RandomDataGeneretor.GeneratorType.PREPROCESS,
+                              prepreocF=prepreocF, attach=False)
+    PM.printD(str(rdg))
 
 

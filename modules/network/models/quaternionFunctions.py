@@ -1,4 +1,14 @@
 
+##########################################################
+# Code coming from:
+#
+# pytorch-qnn v1.0
+# Titouan Parcollet
+# LIA, Université d'Avignon et des Pays du Vaucluse
+# ORKIS, Aix-en-provence
+# October 2018
+##########################################################
+
 import numpy as np
 
 import torch
@@ -7,8 +17,6 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from scipy.stats import chi
-
-
 
 
 def quaternion_conv(input, r_weight, i_weight, j_weight, k_weight, bias, stride,
@@ -322,13 +330,6 @@ def get_kernel_and_weight_shape(operation, in_channels, out_channels, kernel_siz
     return ks, w_shape
 
 
-##########################################################
-# pytorch-qnn v1.0
-# Titouan Parcollet
-# LIA, Université d'Avignon et des Pays du Vaucluse
-# ORKIS, Aix-en-provence
-# October 2018
-##########################################################
 
 class QuaternionConv(nn.Module):
     r"""Applies a Quaternion Convolution to the incoming data.
