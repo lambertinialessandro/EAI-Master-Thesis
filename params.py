@@ -5,6 +5,7 @@
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
+import math
 import torch
 
 #@markdown ---
@@ -45,7 +46,7 @@ typeOptimizer = "Adam" #@param ["Adam", "SGD"] {type:"string"}
 BACH_SIZE = 10 #@param {type:"number"}
 
 if typeModel == "DeepVONet":
-    CHANNELS = 2 # 6
+    CHANNELS = 6
 elif typeModel == "QuaternionDeepVONet":
     CHANNELS = 8
 else:
@@ -105,7 +106,7 @@ FLAG_SAVE_LOG = True #@param {type:"boolean"}
 SAVE_STEP = 35 #@param {type:"number"}
 FLAG_SAVE = True #@param {type:"boolean"}
 
-BASE_EPOCH = 19 #@param {type:"number"} # 1 starting epoch
+BASE_EPOCH = 1 #@param {type:"number"} # 1 starting epoch
 NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"number"} # 10 how many epoch
 
 fileNameFormat = "medium"
