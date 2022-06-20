@@ -3,10 +3,10 @@ torch>=1.11.0  # pip3 install torch torchvision torchaudio
 
 numpy
 opencv-python  # cv2
-glob
+glob2
 Image
 scipy
-skimage
+scikit-image # instead of skimage
 matplotlib  # .pyplotlib
 IPython
 Pillow  # PIL
