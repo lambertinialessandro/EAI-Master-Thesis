@@ -11,8 +11,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataGeneretor, \
-    DataLoader, attach2Torch
+from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataGeneretor
 
 import params
 from modules.utility import PM, bcolors
@@ -61,9 +60,13 @@ def trainEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.t
                 loss_train[sequence]["rot"].append(rotLoss)
 
                 for j in range(params.BACH_SIZE):
-                    pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
-                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
-            del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
+                    pts_yTrain = np.append(pts_yTrain,
+                                           [pts_yTrain[-1] + det_labels[j]],
+                                           axis=0)
+                    pts_out = np.append(pts_out,
+                                        [pts_out[-1] + det_outputs[j]],
+                                        axis=0)
+            del inputs, labels, outputs, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
             PB.update(i)
@@ -472,36 +475,42 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
     test_initT = time.time()
     for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
-        X, y = DataLoader(params.dir_Dataset, attach=False, #TODO
-                          suffixType=params.suffixType, sequence=sequence)
-        test_numOfBatch = int(len(X)/params.BACH_SIZE)-1
+        dg = DataGeneretorPreprocessed(prepreocF, sequence, imageDir, attach=True)
+        test_numOfBatch = dg.numBatchImgs - 1
         PB = PM.printProgressBarI(0, test_numOfBatch)
         outputs = []
+        pts_yTest = np.array([[0, 0, 0, 0, 0, 0]])
+        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
 
-        for i in range(test_numOfBatch):
-            inputs, labels = attach2Torch( #TODO
-                    X[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE],
-                    y[i*params.BACH_SIZE:(i+1)*params.BACH_SIZE]
-                )
+        for inputs, labels, pos, nb in dg:
+            for i in range(nb):
 
-            #model.zero_grad()
+                outputs = model(inputs[i])
+                if params.DEVICE.type == 'cuda':
+                    det_outputs = outputs.cpu().detach().numpy()
+                    det_labels = labels[i].cpu().detach().numpy()
+                else:
+                    det_outputs = outputs.detach().numpy()
+                    det_labels = labels[i].detach().numpy()
 
-            app_outputs = model(inputs[0])
-            if params.DEVICE.type == 'cuda':
-              outputs.append(app_outputs.cpu().detach().numpy())
-            else:
-              outputs.append(app_outputs.detach().numpy())
+                totLoss = criterion(outputs, labels[0]).item()
+                poseLoss = criterion(outputs[0:3], labels[0][0:3]).item()
+                rotLoss = criterion(outputs[3:6], labels[0][3:6]).item()
 
-            totLoss = criterion(app_outputs, labels[0]).item()
-            poseLoss = criterion(app_outputs[:, 0:3], labels[0][:, 0:3]).item()
-            rotLoss = criterion(app_outputs[:, 3:6], labels[0][:, 3:6]).item()
+                loss_test[sequence]["tot"].append(totLoss)
+                loss_test[sequence]["pose"].append(poseLoss)
+                loss_test[sequence]["rot"].append(rotLoss)
 
-            loss_test[sequence]["tot"].append(totLoss)
-            loss_test[sequence]["pose"].append(poseLoss)
-            loss_test[sequence]["rot"].append(rotLoss)
-            PB.update(i)
+                for j in range(params.BACH_SIZE):
+                    pts_yTest = np.append(pts_yTest,
+                                           [pts_yTest[-1] + det_labels[j]],
+                                           axis=0)
+                    pts_out = np.append(pts_out,
+                                        [pts_out[-1] + det_outputs[j]],
+                                        axis=0)
+            PB.update(pos)
 
-            del inputs, labels, app_outputs, totLoss, poseLoss, rotLoss
+            del inputs, labels, outputs, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
         PM.printI("Loss Sequence: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
@@ -509,25 +518,12 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
             np.mean(loss_test[sequence]["pose"]),
             np.mean(loss_test[sequence]["rot"])
             ))
-        del X
+        del dg
         gc.collect()
         torch.cuda.empty_cache()
 
         #print(y_test_det.shape)
         #print(outputs.shape)
-
-        pts_yTest = np.array([[0, 0, 0, 0, 0, 0]])
-        pts_out = np.array([[0, 0, 0, 0, 0, 0]])
-        for i in range(0, len(outputs)):
-            for j in range(0, params.BACH_SIZE):
-                pos = i*params.BACH_SIZE+j
-                pts_yTest = np.append(pts_yTest, [pts_yTest[pos] + y[pos]], axis=0)
-                if pos % params.STEP == 0:
-                    pts_out = np.append(pts_out, [pts_out[-1] + outputs[i][j]], axis=0)
-
-        del outputs, y
-        gc.collect()
-        torch.cuda.empty_cache()
 
         plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
         plt.plot(pts_yTest[:, 0], pts_yTest[:, 2], color='blue')
@@ -830,7 +826,7 @@ if __name__ == "__main__":
                              typeCriterion,
                              typeOptimizer)
 
-    type_train = enumTrain.online_random_RDG
+    type_train = enumTrain.preprocessed
         # preprocessed  preprocessed_random  preprocessed_random_RDG
         # online  online_random  online_random_RDG
 
