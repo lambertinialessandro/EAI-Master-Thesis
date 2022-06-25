@@ -106,7 +106,7 @@ class PrintManager:
     # Debug
     def printD(self, msg, head=""):
       if self.FLAG_DEBUG_PRINT:
-        print(head + "### Debug: " + msg)
+        print(head + "### Debug: {}".format(msg))
 
     def imshowD(self, img, title=""):
       if self.FLAG_DEBUG_PRINT:
@@ -124,7 +124,7 @@ class PrintManager:
     # Info
     def printI(self, msg, head=""):
       if self.FLAG_INFO_PRINT:
-        print(head + "### Info: " + msg)
+        print(head + "### Info: {}".format(msg))
 
     def imshowI(self, img, title=""):
       if self.FLAG_INFO_PRINT:
