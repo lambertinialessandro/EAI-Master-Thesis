@@ -13,8 +13,8 @@ from loadData import DataGeneretor
 from buildModel import buildModel
 
 import params
-from EnumPreproc import EnumPreproc
-from utility import PM, bcolors
+from modules.preprocess.EnumPreproc import EnumPreproc
+from modules.utility import PM, bcolors
 
 def testEpoch(imageDir, prepreocF, seq):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in seq+["tot"]}
