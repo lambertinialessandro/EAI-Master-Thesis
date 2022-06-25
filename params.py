@@ -8,20 +8,23 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 import math
 import torch
 
+from modules.utility import PM
+
 #@markdown ---
 #@markdown ### Flags:
 FLAG_DOWNLOAD_DATASET = False #@param {type:"boolean"}
 FLAG_DEBUG_PRINT = True #@param {type:"boolean"}
 FLAG_INFO_PRINT = True #@param {type:"boolean"}
 FLAG_OUT_HTML = False #@param {type:"boolean"}
+PM.setFlags(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, FLAG_OUT_HTML)
 
 #@markdown ---
 #@markdown ### Files path:
 # global variables to save the tables/models
 dir_main = '.'#@param {type:"string"}
 
-dir_main = 'drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/'#@param {type:"string"}
-FLAG_OUT_HTML = True #@param {type:"boolean"}
+#dir_main = 'drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/'#@param {type:"string"}
+#FLAG_OUT_HTML = True #@param {type:"boolean"}
 
 dir_Dataset = 'Dataset'#@param {type:"string"}
 dir_Dataset = os.path.join(dir_main, dir_Dataset)
@@ -58,13 +61,13 @@ suffixType = "SOBEL" # UNCHANGED, SOBEL, CROPPING, QUAT_PURE, QUAT_GRAY, QUAT_CE
 BACH_SIZE = 10 #@param {type:"number"}
 NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
 RDG_ITER = 1 #@param {type:"number"}
-STEP = 5 #@param {type:"number"}
+STEP = 5 # 5 #@param {type:"number"}
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
 #@param[96, 192, 384] {type:"raw", allow-input: false}
 #@param [6, 8] {type:"raw", allow-input: false}
 
-__dim_image = 1
+__dim_image = 3
 if __dim_image == 1:
     DIM_LSTM = 3840 # 3840 = 384 * 10        10240 # = 1024 * 10
     WIDTH = 320
@@ -83,6 +86,7 @@ elif __dim_image == 3:
     HEIGHT = 384
 else:
     raise ValueError
+#DIM_LSTM = 1024 * math.ceil(WIDTH/2**6) * math.ceil(HEIGHT/2**6)
 HIDDEN_SIZE_LSTM = 1000
 
 NUM_POSES = 6
@@ -100,8 +104,7 @@ else:
 
 
 
-
-FLAG_LOAD = True #@param {type:"boolean"}
+FLAG_LOAD = False #@param {type:"boolean"}
 FLAG_SAVE_LOG = True #@param {type:"boolean"}
 SAVE_STEP = 35 #@param {type:"number"}
 FLAG_SAVE = True #@param {type:"boolean"}
