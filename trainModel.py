@@ -465,7 +465,8 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
     return loss_train, train_elapsedT
 
 
-def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
+def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries,
+           plot=True):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -501,13 +502,14 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
                 loss_test[sequence]["pose"].append(poseLoss)
                 loss_test[sequence]["rot"].append(rotLoss)
 
-                for j in range(params.BACH_SIZE):
-                    pts_yTest = np.append(pts_yTest,
-                                           [pts_yTest[-1] + det_labels[j]],
-                                           axis=0)
-                    pts_out = np.append(pts_out,
-                                        [pts_out[-1] + det_outputs[j]],
-                                        axis=0)
+                if plot:
+                    for j in range(params.BACH_SIZE):
+                        pts_yTest = np.append(pts_yTest,
+                                               [pts_yTest[-1] + det_labels[j]],
+                                               axis=0)
+                        pts_out = np.append(pts_out,
+                                            [pts_out[-1] + det_outputs[j]],
+                                            axis=0)
             PB.update(pos)
 
             del inputs, labels, outputs, det_outputs, det_labels, totLoss, poseLoss, rotLoss
@@ -525,16 +527,17 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
         #print(y_test_det.shape)
         #print(outputs.shape)
 
-        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
-        plt.plot(pts_yTest[:, 0], pts_yTest[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
+        if plot:
+            plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
+            plt.plot(pts_yTest[:, 0], pts_yTest[:, 2], color='blue')
+            plt.legend(['out', 'yTest'])
+            plt.show()
 
-        ax = plt.axes(projection='3d')
-        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
-        ax.plot3D(pts_yTest[:, 0], pts_yTest[:, 1], pts_yTest[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
+            ax = plt.axes(projection='3d')
+            ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
+            ax.plot3D(pts_yTest[:, 0], pts_yTest[:, 1], pts_yTest[:, 2], color='blue')
+            plt.legend(['out', 'yTest'])
+            plt.show()
         del pts_yTest, pts_out
         gc.collect()
         torch.cuda.empty_cache()
@@ -553,7 +556,8 @@ def testEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
 
     return loss_test, test_elapsedT
 
-def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries):
+def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.testingSeries,
+           plot=True):
     loss_test = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
     PM.printI(bcolors.LIGHTYELLOW+"TESTING"+bcolors.ENDC)
@@ -589,11 +593,12 @@ def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
                 loss_test[sequence]["pose"].append(poseLoss)
                 loss_test[sequence]["rot"].append(rotLoss)
 
-                for j in range(params.BACH_SIZE):
-                    pts_yTest = np.append(pts_yTest, [pts_yTest[-1] + det_labels[j]], axis=0)
+                if plot:
+                    for j in range(params.BACH_SIZE):
+                        pts_yTest = np.append(pts_yTest, [pts_yTest[-1] + det_labels[j]], axis=0)
 
-                    if j % params.STEP == 0:
-                        pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+                        if j % params.STEP == 0:
+                            pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
@@ -608,16 +613,17 @@ def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
             np.mean(loss_test[sequence]["rot"])
             ))
 
-        plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
-        plt.plot(pts_yTest[:, 0], pts_yTest[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
+        if plot:
+            plt.plot(pts_out[:, 0], pts_out[:, 2], color='red')
+            plt.plot(pts_yTest[:, 0], pts_yTest[:, 2], color='blue')
+            plt.legend(['out', 'yTest'])
+            plt.show()
 
-        ax = plt.axes(projection='3d')
-        ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
-        ax.plot3D(pts_yTest[:, 0], pts_yTest[:, 1], pts_yTest[:, 2], color='blue')
-        plt.legend(['out', 'yTest'])
-        plt.show()
+            ax = plt.axes(projection='3d')
+            ax.plot3D(pts_out[:, 0], pts_out[:, 1], pts_out[:, 2], color='red')
+            ax.plot3D(pts_yTest[:, 0], pts_yTest[:, 1], pts_yTest[:, 2], color='blue')
+            plt.legend(['out', 'yTest'])
+            plt.show()
         del pts_yTest, pts_out
         gc.collect()
         torch.cuda.empty_cache()
@@ -650,7 +656,8 @@ class enumTrain(Enum):
 
 
 def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
-               sequences_train=params.trainingSeries, sequences_test=params.testingSeries):
+               sequences_train=params.trainingSeries, sequences_test=params.testingSeries,
+               plot_test=False):
     # Load the model
     if params.FLAG_LOAD:
         fileName = os.path.join(params.dir_Model,
@@ -740,13 +747,15 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
                 type_train == enumTrain.preprocessed_random_RDG:
             loss_test, test_elapsedT = testEP(model, criterion, optimizer,
                                                              imageDir, prepreocF,
-                                                             sequences=sequences_test)
+                                                             sequences=sequences_test,
+                                                             plot=plot_test)
         elif type_train == enumTrain.online or \
                 type_train == enumTrain.online_random or \
                 type_train == enumTrain.online_random_RDG:
             loss_test, test_elapsedT = testEO(model, criterion, optimizer,
                                                  imageDir, prepreocF,
-                                                 sequences=sequences_test)
+                                                 sequences=sequences_test,
+                                                 plot=plot_test)
         else:
             raise NotImplementedError
 
@@ -800,15 +809,74 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
 if __name__ == "__main__":
+    import math
     from modules.network.NetworkModule import NetworkFactory
     from modules.preprocess.PreprocessModule import PreprocessFactory
+    import argparse
 
+    parser = argparse.ArgumentParser(description='Training DeepVO')
+
+    parser.add_argument('--type', default='2', type=int, help=' int [1-2]: SOBEL/UNCHANGED')
+    parser.add_argument('--size', default='3', type=int, help=' int [1-3]: small/medium/big')
+    parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
+    parser.add_argument('--epochs', default=200, type=int, help=' int: number of epochs')
+    args = parser.parse_args()
+
+    args = parser.parse_args()
+
+    type_net = args.type
+    size_net = args.size
+    name_net = args.name
+    num_epochs = args.epochs
+
+    PM.printD("printing infos")
+    PM.printD(type_net)
+    PM.printD(size_net)
+    PM.printD(name_net)
+    PM.printD(num_epochs)
+
+    params.BASE_EPOCH = 1
+    params.NUM_EPOCHS = num_epochs
     imageDir = "image_2"
-    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
-                                        (params.WIDTH, params.HEIGHT))
-        # UNCHANGED SOBEL
 
-    PM.printD(f"[{params.BASE_EPOCH}-{params.BASE_EPOCH + params.NUM_EPOCHS-1}]\n")
+    if size_net == 1:
+        params.WIDTH = 320
+        params.HEIGHT = 96
+    elif size_net == 2:
+        params.WIDTH = 640
+        params.HEIGHT = 192
+    elif size_net == 3:
+        params.WIDTH = 1280
+        params.HEIGHT = 384
+    else:
+        raise ValueError
+
+
+    if type_net == 1: # SOBEL
+        typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
+        params.CHANNELS = 2
+        params.suffixType = "SOBEL"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
+                                            (params.WIDTH, params.HEIGHT))
+    elif type_net == 2: # UNCHANGED
+        typeModel = NetworkFactory.ModelEnum.DeepVONet
+        params.CHANNELS = 6
+        params.suffixType = "UNCHANGED"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+                                            (params.WIDTH, params.HEIGHT))
+    else:
+        raise ValueError
+
+    params.FLAG_LOAD = False
+    params.fileNameFormat = name_net
+
+
+    PM.printD(params.BASE_EPOCH)
+    PM.printD(params.NUM_EPOCHS)
+    PM.printD(params.suffixType)
+    PM.printD(params.DIM_LSTM)
 
     try:
         del model, criterion, optimizer
@@ -817,7 +885,6 @@ if __name__ == "__main__":
     except NameError:
         pass
 
-    typeModel = NetworkFactory.ModelEnum.DeepVONet # DeepVONet, SmallDeepVONet
     typeCriterion = NetworkFactory.CriterionEnum.MSELoss
     typeOptimizer = NetworkFactory.OptimizerEnum.Adam
 
@@ -826,14 +893,15 @@ if __name__ == "__main__":
                              typeCriterion,
                              typeOptimizer)
 
-    type_train = enumTrain.preprocessed
+    type_train = enumTrain.online_random_RDG
         # preprocessed  preprocessed_random  preprocessed_random_RDG
         # online  online_random  online_random_RDG
 
     # for parameter in model.parameters():
     #     PM.printI(str(parameter.size()))
 
-    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train)
-    print()
+    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train, plot_test=False)
+
+    print("Train Terminated !!")
 
 
