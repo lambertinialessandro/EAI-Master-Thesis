@@ -167,10 +167,10 @@ class DataGeneretorOnline(AbstractDataGenerator):
 
         # names of all the images
         self.nameImgs = sorted(os.listdir(self.path2sequence))
-        self.numImgs = len(self.nameImgs)
+        self.numImgs = len(self.nameImgs) - self.step
 
         # num of poses should be equal tu the number of images
-        assert self.numPoses == self.numImgs
+        # assert self.numPoses == self.numImgs
 
     def __next__(self):
         if self.currPos > self.maxPos:
