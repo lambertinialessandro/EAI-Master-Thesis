@@ -11,6 +11,10 @@ matplotlib  # .pyplotlib
 IPython
 Pillow  # PIL
 
+ffmpeg
+libsm6
+libxext6
+
 # os
 # re
 # gc
