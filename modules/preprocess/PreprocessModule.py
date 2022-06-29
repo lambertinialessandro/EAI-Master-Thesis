@@ -64,7 +64,11 @@ class SobelPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
-        im = cv2.resize(im, self.imgSize, self.interpolation)
+        try:
+            im = cv2.resize(im, self.imgSize, self.interpolation)
+        except:
+            print(imgPath)
+            raise Exception
 
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 

@@ -154,7 +154,8 @@ class DataGeneretorPreprocessed(AbstractDataGenerator):
         return imagesSet
 
     def __str__(self):
-        return super().__str__()
+        return super().__str__()+\
+               f"numImgs {self.numImgs}\n"
 
 
 class DataGeneretorOnline(AbstractDataGenerator):
@@ -276,9 +277,9 @@ class RandomDataGeneretor():
 
     def __next__(self):
         if self.currPos > self.maxIters:
-            for dg in self.dgToDo:
-                self.dgDone.append(dg)
-                self.dgToDo.remove(dg)
+            # for dg in self.dgToDo:
+            #     self.dgDone.append(dg)
+            #     self.dgToDo.remove(dg)
             raise StopIteration
         elif self.currPos == self.maxIters:
             imagesSet = None
