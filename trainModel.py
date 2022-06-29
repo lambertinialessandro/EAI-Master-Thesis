@@ -856,7 +856,7 @@ if __name__ == "__main__":
         typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
         params.CHANNELS = 2
         params.suffixType = "SOBEL"
-        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 2: # UNCHANGED
