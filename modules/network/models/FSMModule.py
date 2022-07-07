@@ -20,6 +20,7 @@ class FSM(nn.Module):
 
         # [64, 512, 3, 3], expected input[1, 256, 24, 16]
         # [32, 256, 3, 3], expected input[10, 1024, 5, 2]
+        # [10, 1024, 20, 6]
 
         C = 1024 # 256
         Co = int(C // 8)
@@ -27,7 +28,7 @@ class FSM(nn.Module):
         self.b1_1 = torch.nn.Conv2d(C, Co, kernel_size=3, stride=1, padding=1)
         self.b1_2 = torch.nn.BatchNorm2d(Co)
 
-        self.batch, self.dim1, self.dim2, channels = 10, 5, 2, 128 # 24, 16, 32 # 14, 12, 128
+        self.batch, self.dim1, self.dim2, channels = 10, 20, 6, 128# 10, 5, 2, 128 # 24, 16, 32 # 14, 12, 128
         Ch = (channels // 2)
         if Ch < 1:
             Ch = 1
