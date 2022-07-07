@@ -829,12 +829,6 @@ if __name__ == "__main__":
     name_net = args.name
     num_epochs = args.epochs
 
-    PM.printD("printing infos")
-    PM.printD(type_net)
-    PM.printD(size_net)
-    PM.printD(name_net)
-    PM.printD(num_epochs)
-
     params.BASE_EPOCH = 1
     params.NUM_EPOCHS = num_epochs
     imageDir = "image_2"
@@ -851,6 +845,11 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
+    PM.printI(bcolors.LIGHTGREEN+"Info training:"+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"name Network: {}".format(name_net)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"number epochs: {}".format(num_epochs)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC+"\n")
+
 
     if type_net == 1: # SOBEL
         typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
@@ -859,6 +858,7 @@ if __name__ == "__main__":
         params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
+        params.DEVICE = torch.device("cuda")
     elif type_net == 2: # UNCHANGED
         typeModel = NetworkFactory.ModelEnum.DeepVONet
         params.CHANNELS = 6
@@ -866,6 +866,15 @@ if __name__ == "__main__":
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
                                             (params.WIDTH, params.HEIGHT))
+        params.DEVICE = torch.device("cpu") # TODO
+    elif type_net == 3: # UNCHANGED_FSM
+        typeModel = NetworkFactory.ModelEnum.DeepVONet_FSM
+        params.CHANNELS = 6
+        params.suffixType = "UNCHANGED"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+                                            (params.WIDTH, params.HEIGHT))
+        params.DEVICE = torch.device("cuda")
     else:
         raise ValueError
 

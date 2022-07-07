@@ -19,7 +19,7 @@ class NetworkFactory():
         criterion = CriterionFactory.build(typeCriterion)
         optimizer = OptimizerFactory.build(typeOptimizer, model)
 
-        PM.printI(bcolors.LIGHTRED+"Building model:"+bcolors.ENDC)
+        PM.printI(bcolors.LIGHTGREEN+"Building model:"+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"model: {}".format(typeModel)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
