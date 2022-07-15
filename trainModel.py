@@ -816,8 +816,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
-    parser.add_argument('--type', default='4', type=int, help=' int [1-2]: SOBEL/UNCHANGED')
+    parser.add_argument('--type', default='4', type=int, help=' int [1-4]: SOBEL/UNCHANGED')
     parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
+    parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
     parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
     parser.add_argument('--epochs', default=200, type=int, help=' int: number of epochs')
     parser.add_argument('--dim_LSTM', default=1000, type=int, help=' int: number of epochs')
@@ -827,6 +828,7 @@ if __name__ == "__main__":
 
     type_net = args.type
     size_net = args.size
+    Dataset_path = args.path
     name_net = args.name
     num_epochs = args.epochs
     dim_LSTM = args.dim_LSTM
@@ -835,6 +837,17 @@ if __name__ == "__main__":
     params.BASE_EPOCH = 1
     params.NUM_EPOCHS = num_epochs
     imageDir = "image_2"
+
+    params.dir_main = Dataset_path
+    params.dir_Dataset = 'Dataset'
+    params.dir_Dataset = os.path.join(params.dir_main, params.dir_Dataset)
+    params.path_sequences = os.path.join(params.dir_Dataset, 'sequences')
+    params.path_poses = os.path.join(params.dir_Dataset, 'poses')
+
+    params.dir_Model = 'Model'
+    params.dir_Model = os.path.join(params.dir_main, params.dir_Model)
+    params.dir_History = 'History'
+    params.dir_History = os.path.join(params.dir_main, params.dir_History)
 
     if size_net == 1:
         params.WIDTH = 320
