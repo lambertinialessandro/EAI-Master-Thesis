@@ -816,18 +816,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
-    parser.add_argument('--type', default='2', type=int, help=' int [1-2]: SOBEL/UNCHANGED')
-    parser.add_argument('--size', default='3', type=int, help=' int [1-3]: small/medium/big')
+    parser.add_argument('--type', default='4', type=int, help=' int [1-2]: SOBEL/UNCHANGED')
+    parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
     parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
     parser.add_argument('--epochs', default=200, type=int, help=' int: number of epochs')
-    args = parser.parse_args()
-
+    parser.add_argument('--dim_LSTM', default=1000, type=int, help=' int: number of epochs')
+    parser.add_argument('--online', default=1, type=int,
+                        help=' int: online dataset preprocessing [0=False, 1=True]')
     args = parser.parse_args()
 
     type_net = args.type
     size_net = args.size
     name_net = args.name
     num_epochs = args.epochs
+    dim_LSTM = args.dim_LSTM
+    online = args.online
 
     params.BASE_EPOCH = 1
     params.NUM_EPOCHS = num_epochs
@@ -845,10 +848,22 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
+    if online == 1:
+        type_train = enumTrain.online_random_RDG
+        # online  online_random  online_random_RDG
+    elif online == 0:
+        type_train = enumTrain.preprocessed_random_RDG
+        # preprocessed  preprocessed_random  preprocessed_random_RDG
+    else:
+        raise ValueError
+
     PM.printI(bcolors.LIGHTGREEN+"Info training:"+bcolors.ENDC)
     PM.printI(bcolors.LIGHTYELLOW+"name Network: {}".format(name_net)+bcolors.ENDC)
     PM.printI(bcolors.LIGHTYELLOW+"number epochs: {}".format(num_epochs)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC+"\n")
+    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"Dimension LSTM: {}".format(dim_LSTM)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"online preprocessing: {}".format(online)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"type preprocessing: {}".format(type_train.value)+bcolors.ENDC+"\n")
 
 
     if type_net == 1: # SOBEL
@@ -875,8 +890,18 @@ if __name__ == "__main__":
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
                                             (params.WIDTH, params.HEIGHT))
         params.DEVICE = torch.device("cuda")
+    elif type_net == 4: # UNCHANGED
+        typeModel = NetworkFactory.ModelEnum.DSC_VONet
+        params.CHANNELS = 6
+        params.suffixType = "UNCHANGED"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+                                            (params.WIDTH, params.HEIGHT))
+
     else:
         raise ValueError
+
+    params.HIDDEN_SIZE_LSTM = dim_LSTM
 
     params.FLAG_LOAD = False
     params.fileNameFormat = name_net
@@ -901,10 +926,6 @@ if __name__ == "__main__":
         NetworkFactory.build(typeModel, params.DIM_LSTM, params.HIDDEN_SIZE_LSTM, params.DEVICE,
                              typeCriterion,
                              typeOptimizer)
-
-    type_train = enumTrain.online_random_RDG
-        # preprocessed  preprocessed_random  preprocessed_random_RDG
-        # online  online_random  online_random_RDG
 
     # for parameter in model.parameters():
     #     PM.printI(str(parameter.size()))
