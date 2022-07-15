@@ -366,116 +366,31 @@ class RandomDataGeneretor():
                ''.join([f"{dg}\n\n" for dg in self.dgDone])
 
 
-########### TODO
-
-import cv2
-import glob
-#import time
-
-def getImage(path):
-    img = cv2.imread(path)
-    img = cv2.resize(img, (params.WIDTH, params.HEIGHT), interpolation=cv2.INTER_LINEAR)
-    return img
-
-def loadImages(path, suffix):
-    #numImgs = 0#len(os.listdir(path))
-    #print("Path: ".format(path))
-    #print("Num of imges {}".format(numImgs))
-
-    #initT = time.time()
-    if os.path.isfile(path + suffix):
-        imagesSet = np.load(path + suffix, allow_pickle=False)
-        print(imagesSet.shape)
-    else:
-        notFirstIter = False
-        img1 = []
-        img2 = []
-        imagesSet = []
-        for img in glob.glob(path+'/*'):
-            img2 = getImage(img)
-
-            if notFirstIter:
-                img = np.concatenate([img1, img2], axis=-1)
-                imagesSet.append(img)
-            else:
-                notFirstIter = True
-
-            img1 = img2
-
-    #elapsedT = time.time() - initT
-    #print("Time needed: %.2fs"%(elapsedT))
-    imagesSet = np.reshape(imagesSet, (-1, params.CHANNELS, params.WIDTH, params.HEIGHT))
-    return imagesSet
-
-def loadPoses(path):
-    #print("Path: ".format(path))
-
-    suffix = "_pose_loaded.npy"
-    #initT = time.time()
-    if os.path.isfile(path + suffix):
-        posesSet = np.load(path + suffix, allow_pickle=False)
-    else:
-        notFirstIter = False
-        pose1 = []
-        pose2 = []
-        posesSet = []
-        with open(path + ".txt", 'r') as f:
-            lines = f.readlines()
-            for line in lines:
-                matrix = np.fromstring(line, dtype=float, sep=' ')
-                pose2 = poseFile2poseRobot(matrix)
-
-                if notFirstIter:
-                    pose = pose2-pose1
-                    posesSet.append(pose)
-                else:
-                    notFirstIter = True
-
-                pose1 = pose2
-            posesSet = np.array(posesSet)
-
-    #elapsedT = time.time() - initT
-    #print("Time needed: %.2fs"%(elapsedT))
-    return posesSet
-
-def attach2Torch(imagesSet, posesSet):
-    imagesSet = [torch.FloatTensor(imagesSet).to(params.DEVICE)] #[0:100]
-    posesSet = [torch.FloatTensor(posesSet).to(params.DEVICE)] #[0:100]
-
-    #print("Details of X :")
-    #print(imagesSet[0].size())
-    #print("Details of y :")
-    #print(posesSet[0].size())
-
-    imagesSet = torch.stack(imagesSet).view(-1, params.BACH_SIZE, params.CHANNELS,
-                                            params.WIDTH, params.HEIGHT)
-    posesSet = torch.stack(posesSet).view(-1, params.BACH_SIZE, params.NUM_POSES)
-    #print("Details of X :")
-    #print(imagesSet.size())
-    #print("Details of y :")
-    #print(posesSet.size())
-    return imagesSet, posesSet
-
-def DataLoader(datapath, attach=True, suffixType="", sequence='00'):
-  imgPath = os.path.join(datapath, 'sequences', sequence, 'image_2')
-  posesPath = os.path.join(datapath, 'poses', sequence)
-
-  suffix = "_{}_{}_{}_loaded.npy".format(suffixType, params.WIDTH, params.HEIGHT)
-
-  imagesSet = loadImages(imgPath, suffix)
-  posesSet = loadPoses(posesPath)
-
-  if attach:
-    imagesSet, posesSet = attach2Torch(imagesSet, posesSet)
-
-  return imagesSet, posesSet
-
-########### TODO
-
 
 if __name__ == "__main__":
     import params
     PM.setFlags(True, True, False)
+
+
+    sequence = "02"
+    imageDir = "image_2"
+    imgSize = (params.WIDTH, params.HEIGHT)
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED, imgSize)
+    dgo = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=False)
+
+    pb = PM.printProgressBarI(0, dgo.numBatch-1)
+
+    try:
+        for imageBatchSet, posesBatchSet, pos, nb in dgo:
+            pb.update(pos)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        pass
+
+
+
+
 
 
     PM.printD(bcolors.DARKGREEN+"Dataset analysis"+bcolors.ENDC+" ###")
