@@ -6,7 +6,7 @@ from modules.network.models.FSMModule import FSM
 
 
 class QuatC_Block(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
+    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.5):
         super(QuatC_Block, self).__init__()
 
         self.conv = QuaternionConv(in_ch, out_ch, kernel_size=kernel_size, stride=stride,
@@ -49,8 +49,7 @@ class QuaternionDeepVONet(nn.Module):
         self.flatten = nn.Flatten()
 
         self.lstm = nn.LSTM(input_size=input_size_LSTM, hidden_size=hidden_size_LSTM,
-                            num_layers=2,
-                            dropout=0.5, batch_first=True)
+                            num_layers=2, dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
 
         self.linear_output = nn.Linear(in_features=hidden_size_LSTM, out_features=6)

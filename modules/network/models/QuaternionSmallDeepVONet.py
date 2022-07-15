@@ -5,7 +5,7 @@ from modules.network.models.quaternionFunctions import QuaternionConv
 
 
 class QuatC_Block(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size, stride, padding, dropout_rate):
+    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.5):
         super(QuatC_Block, self).__init__()
 
         self.conv = QuaternionConv(in_ch, out_ch, kernel_size=kernel_size, stride=stride,
