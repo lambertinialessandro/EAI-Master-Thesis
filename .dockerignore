@@ -9,6 +9,7 @@
 ### Directories ###
 __pycache__
 .git
+
 Dataset
 History
 Model
