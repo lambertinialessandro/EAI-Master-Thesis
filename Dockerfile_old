@@ -9,7 +9,7 @@ FROM nvidia/cuda:11.0.3-devel-ubuntu20.04
 MAINTAINER lambertini and landini <lambertini.1938390@studenti.uniroma1.it>
 
 ### RUN executed when build
-RUN apt-get update && apt-get install -y python3 python3-pip sudo
+RUN apt-get update && apt-get install -y python3 python3-pip sudo git
 
 # create dir and copy all the code
 RUN mkdir -p /home/app
@@ -41,14 +41,26 @@ CMD ls -la
 
 
 # 	docker build -t deep_vo:1.0 .
+#	docker run d795b5bee3d7 -v ./Dataset /home/app/
 
 #	docker run dockerID
 #	docker run dockerID -v path-source-esterna:path-destination-docker
 #	docker run --gpus all -ti dockerID python3 main.py
 #	docker run --gpus all --ipc=host -ti dockerID python3 main.py
 
+#	docker exec -ti c42d1d241094 /bin/bash
+#	sudo docker run c42d1d241094 -i -t ubuntu /bin/bash -v ./Dataset /home/app/
+
+
 
 #	docker images
 #	docker ps
 #	docker stop
 #	docker rmi -f dockerID
+
+
+#	sh pal_docker.sh -it be49813fd67c bash
+
+
+
+
