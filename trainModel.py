@@ -816,11 +816,30 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
+    """
+!python3 trainModel.py
+    --type 4
+    --size 1
+    --name "dsc_small_100"
+
+    --path "drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/"
+
+    --load_file "dsc_small_100[1-14]"
+    --start_e 1
+    --end_e 200
+
+    --dim_LSTM 100
+
+    --online 0
+    """
+
     parser.add_argument('--type', default='4', type=int, help=' int [1-4]: SOBEL/UNCHANGED')
     parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
-    parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
     parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
-    parser.add_argument('--epochs', default=200, type=int, help=' int: number of epochs')
+    parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
+    parser.add_argument('--load_file', default="", type=str, help=' str: name network')
+    parser.add_argument('--start_e', default=1, type=int, help=' int: initial number of epoch')
+    parser.add_argument('--end_e', default=200, type=int, help=' int: final number of epoch')
     parser.add_argument('--dim_LSTM', default=1000, type=int, help=' int: number of epochs')
     parser.add_argument('--online', default=1, type=int,
                         help=' int: online dataset preprocessing [0=False, 1=True]')
@@ -829,14 +848,12 @@ if __name__ == "__main__":
     type_net = args.type
     size_net = args.size
     Dataset_path = args.path
+    name_file_load = args.load_file
     name_net = args.name
-    num_epochs = args.epochs
+    start_e = args.start_e
+    end_e = args.end_e
     dim_LSTM = args.dim_LSTM
     online = args.online
-
-    params.BASE_EPOCH = 1
-    params.NUM_EPOCHS = num_epochs
-    imageDir = "image_2"
 
     params.dir_main = Dataset_path
     params.dir_Dataset = 'Dataset'
@@ -870,13 +887,15 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
-    PM.printI(bcolors.LIGHTGREEN+"Info training:"+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"name Network: {}".format(name_net)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"number epochs: {}".format(num_epochs)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"Dimension LSTM: {}".format(dim_LSTM)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"online preprocessing: {}".format(online)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"type preprocessing: {}".format(type_train.value)+bcolors.ENDC+"\n")
+    params.BASE_EPOCH = start_e
+    params.NUM_EPOCHS = end_e - start_e
+    imageDir = "image_2"
+
+    params.HIDDEN_SIZE_LSTM = dim_LSTM
+
+    params.FLAG_LOAD = name_file_load != ""
+    params.fileNameFormat = name_net
+    params.suffixFileNameLoad = name_file_load
 
 
     if type_net == 1: # SOBEL
@@ -914,16 +933,20 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
-    params.HIDDEN_SIZE_LSTM = dim_LSTM
+    PM.printI(bcolors.LIGHTGREEN+"Info training:"+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"name Network: {}".format(name_net)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC+"\n")
 
-    params.FLAG_LOAD = False
-    params.fileNameFormat = name_net
+    PM.printI(bcolors.LIGHTYELLOW+"starting epoch: {}".format(start_e)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"number epochs: {}".format(params.NUM_EPOCHS)+bcolors.ENDC)
+    PM.printD(bcolors.LIGHTCYAN+"Load model: {}".format(params.FLAG_LOAD)+bcolors.ENDC)
+    PM.printD(bcolors.LIGHTCYAN+"prefix saving: {}".format(params.fileNameFormat)+bcolors.ENDC+"\n")
 
-
-    PM.printD(params.BASE_EPOCH)
-    PM.printD(params.NUM_EPOCHS)
-    PM.printD(params.suffixType)
-    PM.printD(params.DIM_LSTM)
+    PM.printI(bcolors.LIGHTYELLOW+"Dimension LSTM: {}".format(dim_LSTM)+bcolors.ENDC)
+    PM.printD(bcolors.LIGHTCYAN+"Dimension Hidden LSTM: {}".format(params.DIM_LSTM)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"online preprocessing: {}".format(online)+bcolors.ENDC)
+    PM.printI(bcolors.LIGHTYELLOW+"suffix type: {}".format(params.suffixType)+bcolors.ENDC)
+    PM.printD(bcolors.LIGHTCYAN+"type preprocessing: {}".format(type_train.value)+bcolors.ENDC+"\n")
 
     try:
         del model, criterion, optimizer
