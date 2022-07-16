@@ -137,6 +137,7 @@ class bcolors:
     LIGHTRED = '\x1b[1;31;10m'
     LIGHTGREEN = '\x1b[1;32;10m'
     LIGHTYELLOW = '\x1b[1;33;10m'
+    LIGHTCYAN = '\x1b[38;5;14m'
 
     DARKBLUE = '\x1b[1;30;44m'
     DARKYELLOW = '\x1b[1;33;40m'
