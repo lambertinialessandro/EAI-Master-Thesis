@@ -12,14 +12,14 @@ from modules.utility import PM, bcolors, poseFile2poseRobot
 
 
 class AbstractDataGenerator(ABC):
-    path_sequences = params.path_sequences
-    path_poses = params.path_poses
-    bachSize = params.BACH_SIZE
-    numBatch = params.NUM_BACH
-    numImgs4Iter = numBatch*bachSize
-    step = params.STEP
-
     def __init__(self, sequence, imageDir, attach=False):
+        self.path_sequences = params.path_sequences
+        self.path_poses = params.path_poses
+        self.bachSize = params.BACH_SIZE
+        self.numBatch = params.NUM_BACH
+        self.numImgs4Iter = self.numBatch*self.bachSize
+        self.step = params.STEP
+
         self.sequence = sequence
 
         # str: path to sequences and poses
@@ -237,18 +237,18 @@ class GeneratorType(Enum):
     ONLINE = "ONLINE"
 
 class RandomDataGeneretor():
-    path_sequences = params.path_sequences
-    path_poses = params.path_poses
-    bachSize = params.BACH_SIZE
-    numBatch = params.NUM_BACH
-    numImgs4Iter = numBatch*bachSize
-    step = params.STEP
-    iters = len(params.trainingSeries)* params.RDG_ITER
-
     GeneratorType = GeneratorType
 
     def __init__(self, sequences, imageDir, type_I:GeneratorType,
                  prepreocF, attach=False):
+        self.path_sequences = params.path_sequences
+        self.path_poses = params.path_poses
+        self.bachSize = params.BACH_SIZE
+        self.numBatch = params.NUM_BACH
+        self.numImgs4Iter = self.numBatch*self.bachSize
+        self.step = params.STEP
+        self.iters = len(params.trainingSeries)* params.RDG_ITER
+
         self.sequences = sequences
         self.attach = attach
 
