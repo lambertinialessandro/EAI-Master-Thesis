@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataGeneretor
 
 import params
-from modules.utility import PM, bcolors
+from modules.utility import PM, bcolors, checkExistDirs
 
 
 def trainEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
@@ -660,7 +660,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
                plot_test=False):
     # Load the model
     if params.FLAG_LOAD:
-        fileName = os.path.join(params.dir_Model,
+        fileName = os.path.join(params.dir_Model, params.fileNameFormat,
                                 f"{params.prefixFileNameLoad}{params.suffixFileNameLoad}.pt")
         checkpoint = torch.load(fileName)
 
@@ -711,11 +711,11 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
         # Save the log file
         if params.FLAG_SAVE_LOG:
             suffix = params.suffixFileNameLosses.format(params.fileNameFormat, epoch)
-            fileName = os.path.join(params.dir_History,
+            fileName = os.path.join(params.dir_History, params.fileNameFormat,
                                     f"{params.prefixFileNameLosses}{suffix}.txt")
             with open(fileName, "w") as f:
                 f.write("{}\n".format(str(loss_train)))
-            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss_{}".format(params.dir_History, suffix))+bcolors.ENDC)
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}".format(fileName)+bcolors.ENDC)
         else:
             PM.printD(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
@@ -723,7 +723,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
         # Save the model
         if params.FLAG_SAVE:
             suffix = params.suffixFileNameSave.format(params.fileNameFormat, params.BASE_EPOCH, epoch)
-            fileName = os.path.join(params.dir_Model,
+            fileName = os.path.join(params.dir_Model, params.fileNameFormat,
                                     f"{params.prefixFileNameSave}{suffix}.pt")
             torch.save({
                       'model_state_dict': model.state_dict(),
@@ -733,7 +733,7 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
             if (epoch-params.BASE_EPOCH) % params.SAVE_STEP != 0:
                 suffix = params.suffixFileNameSave.format(params.fileNameFormat, params.BASE_EPOCH, epoch-1)
-                fileName = os.path.join(params.dir_Model,
+                fileName = os.path.join(params.dir_Model, params.fileNameFormat,
                                         f"{params.prefixFileNameSave}{suffix}.pt")
                 os.remove(fileName)
                 PM.printI(bcolors.LIGHTRED+"Removed {}\n".format(fileName)+bcolors.ENDC)
@@ -763,11 +763,11 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
         # Save the log file
         if params.FLAG_SAVE_LOG:
             suffix = params.suffixFileNameLosses.format(params.fileNameFormat, epoch)
-            fileName = os.path.join(params.dir_History,
+            fileName = os.path.join(params.dir_History, params.fileNameFormat,
                                     f"{params.prefixFileNameLosses}{suffix}.txt")
             with open(fileName, "a") as f:
                 f.write("{}\n".format(str(loss_test)))
-            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format("{}/loss_{}".format(params.dir_History, suffix))+bcolors.ENDC)
+            PM.printD(bcolors.LIGHTGREEN+"saved on file {}.txt".format(fileName)+bcolors.ENDC)
         else:
             PM.printI(bcolors.LIGHTRED+"History not Saved\n"+bcolors.ENDC)
 
@@ -895,6 +895,10 @@ if __name__ == "__main__":
 
     params.FLAG_LOAD = name_file_load != ""
     params.fileNameFormat = name_net
+    checkExistDirs([params.dir_Model,
+                    params.dir_History,
+                    os.path.join(params.dir_Model, params.fileNameFormat),
+                    os.path.join(params.dir_History, params.fileNameFormat)])
     params.suffixFileNameLoad = name_file_load
 
 
@@ -966,7 +970,7 @@ if __name__ == "__main__":
     # for parameter in model.parameters():
     #     PM.printI(str(parameter.size()))
 
-    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train, plot_test=False)
+    trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train, plot_test=True)
 
     print("Train Terminated !!")
 
