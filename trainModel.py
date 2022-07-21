@@ -878,7 +878,11 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
-    if online == 1:
+    if online == 3:
+        type_train = enumTrain.online_random
+    elif online == 2:
+        type_train = enumTrain.preprocessed_random
+    elif online == 1:
         type_train = enumTrain.online_random_RDG
         # online  online_random  online_random_RDG
     elif online == 0:
