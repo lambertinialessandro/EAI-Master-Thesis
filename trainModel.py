@@ -910,7 +910,7 @@ if __name__ == "__main__":
         typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
         params.CHANNELS = 6 # 2
         params.suffixType = "UNCHANGED" # "SOBEL"
-        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6) # 384
+        params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6) # 384
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
         params.DEVICE = torch.device("cuda")
