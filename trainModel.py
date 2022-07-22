@@ -842,7 +842,7 @@ if __name__ == "__main__":
     parser.add_argument('--end_e', default=200, type=int, help=' int: final number of epoch')
     parser.add_argument('--dim_LSTM', default=1000, type=int, help=' int: number of epochs')
     parser.add_argument('--online', default=1, type=int,
-                        help=' int: online dataset preprocessing [0=False, 1=True]')
+                        help=' int [0-3]: online dataset preprocessing')
     args = parser.parse_args()
 
     type_net = args.type
@@ -908,9 +908,9 @@ if __name__ == "__main__":
 
     if type_net == 1: # SOBEL
         typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
-        params.CHANNELS = 2
-        params.suffixType = "SOBEL"
-        params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        params.CHANNELS = 6 # 2
+        params.suffixType = "UNCHANGED" # "SOBEL"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6) # 384
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
         params.DEVICE = torch.device("cuda")
