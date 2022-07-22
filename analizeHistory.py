@@ -8,27 +8,28 @@ from modules.utility import PM, bcolors
 
 
 def readHistoryFromDir(dir_History):
-    check_re_single = re.compile("^loss\w+\[\d+\]\.txt$")
+    check_re_single = re.compile("^loss\w+\[\d+\]\.txt$") # TODO
     interval_re_single = re.compile("(?<=\[)\d+")
 
     check_re_double = re.compile("^loss\w+\[\d+\-\d+\]\.txt$")
     interval_re_double = re.compile("(?<=\[)\d+\-\d+")
 
-    prefix_re = re.compile("^loss\w+")
+    prefix_re = re.compile("^loss\w+\[\d+\]") # TODO
     lossNames = {}
 
     for s in os.listdir(dir_History):
-        if bool(check_re_single.match(s)):
-            interval = interval_re_single.findall(s)[0]
-        elif bool(check_re_double.match(s)):
-            interval = interval_re_double.findall(s)[0].split('-')
-        else:
-            continue
+        for ss in os.listdir(os.path.join(dir_History, s)):
+            if bool(check_re_single.match(ss)):
+                interval = interval_re_single.findall(ss)[-1]
+            elif bool(check_re_double.match(ss)):
+                interval = interval_re_double.findall(ss)[-1].split('-')
+            else:
+                continue
 
-        prefix = prefix_re.findall(s)[0]
-        if not prefix in lossNames.keys():
-            lossNames[prefix] = []
-        lossNames[prefix].append(interval)
+            prefix = s
+            if not prefix in lossNames.keys():
+                lossNames[prefix] = []
+            lossNames[prefix].append(interval)
 
     for k in lossNames.keys():
         if isinstance(lossNames[k][0], str):
@@ -47,7 +48,7 @@ def plot_graph(dir_History, name, lossName):
         for i in lossName:
             currPos = int(i)
             pb.update(currPos)
-            with open(os.path.join(dir_History, f"{name}[{i}].txt"), "r") as f:
+            with open(os.path.join(dir_History, name, f"loss_{name}[{i}].txt"), "r") as f:
                 state = 0
                 for line in f:
                     app_d = eval(line)
@@ -61,7 +62,7 @@ def plot_graph(dir_History, name, lossName):
     elif isinstance(lossName[0], list):
         for minI, maxI in lossName:
             currPos = int(minI)
-            with open(os.path.join(dir_History, f"{name}[{minI}-{maxI}].txt"), "r") as f:
+            with open(os.path.join(dir_History, name, f"loss_{name}[{minI}-{maxI}].txt"), "r") as f:
                 state = 0
                 for line in f:
                     app_d = eval(line)
