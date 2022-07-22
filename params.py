@@ -69,7 +69,7 @@ STEP = 5 # 5 #@param {type:"number"}
 
 __dim_image = 3
 if __dim_image == 1:
-    DIM_LSTM = 3840 # 3840 = 384 * 10        10240 # = 1024 * 10
+    DIM_LSTM = 10240 # 3840 = 384 * 10        10240 # = 1024 * 10
     WIDTH = 320
     HEIGHT = 96
 
@@ -77,7 +77,7 @@ if __dim_image == 1:
     # batch, dim1, dim2, channels = 10, 5, 2, 128 # TODO
 
 elif __dim_image == 2:
-    DIM_LSTM = 30720 # = 3 * 10240
+    DIM_LSTM = 10240 # = 3 * 10240   30720
     WIDTH = 640
     HEIGHT = 192
 elif __dim_image == 3:
