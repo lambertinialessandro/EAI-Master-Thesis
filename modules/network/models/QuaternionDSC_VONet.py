@@ -6,7 +6,7 @@ from modules.network.models.FSMModule import FSM
 
 
 class QuatDSC_Block(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.5):
+    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.2):
         super(QuatDSC_Block, self).__init__()
 
         self.depth_conv = QuaternionConv(4, in_ch, kernel_size=kernel_size,

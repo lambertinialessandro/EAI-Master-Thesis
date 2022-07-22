@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class DSC_Block(nn.Module):
-    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.5):
+    def __init__(self, in_ch, out_ch, kernel_size=1, stride=1, padding=0, dropout_rate=0.2):
         super(DSC_Block, self).__init__()
 
         self.depth_conv = nn.Conv2d(in_ch, in_ch, kernel_size=kernel_size,
