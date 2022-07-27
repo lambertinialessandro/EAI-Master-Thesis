@@ -16,7 +16,8 @@ RUN mkdir -p ./Model
 # COPY ./requirements.txt /home/app/
 # RUN pip3 install -r requirements.txt
 
-
+RUN rm *
+RUN rm -fr modules
 RUN git clone "https://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@github.com/lambertinialessandro/EAI-FinalProject.git"
 RUN mv ./EAI-FinalProject/* ./
 RUN rm -rf ./EAI-FinalProject/
