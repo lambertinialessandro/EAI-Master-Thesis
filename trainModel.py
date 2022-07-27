@@ -17,6 +17,7 @@ import params
 from modules.utility import PM, bcolors, checkExistDirs
 
 
+train_sequences = ["00", "01", "02", "08", "09"]
 def trainEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.trainingSeries):
     loss_train = {key: {"tot": [], "pose": [], "rot": []} for key in sequences+["tot"]}
 
@@ -441,7 +442,7 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
     gc.collect()
     torch.cuda.empty_cache()
 
-    for s in sequences:
+    for s in train_sequences:
         PM.printI(f"Loss Sequence[{bcolors.LIGHTGREEN}{s}{bcolors.ENDC}]: [tot: %.5f, pose: %.5f, rot: %.5f]"%(
             np.mean(loss_train[s]["tot"]),
             np.mean(loss_train[s]["pose"]),
@@ -833,8 +834,8 @@ if __name__ == "__main__":
     --online 0
     """
 
-    parser.add_argument('--type', default='4', type=int, help=' int [1-4]: SOBEL/UNCHANGED')
-    parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
+    parser.add_argument('--type', default='2', type=int, help=' int [1-4]: SOBEL/UNCHANGED')
+    parser.add_argument('--size', default='3', type=int, help=' int [1-3]: small/medium/big')
     parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
     parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
     parser.add_argument('--load_file', default="", type=str, help=' str: name network')
