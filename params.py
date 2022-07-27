@@ -26,7 +26,7 @@ dir_main = '.'#@param {type:"string"}
 #dir_main = 'drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/'#@param {type:"string"}
 #FLAG_OUT_HTML = True #@param {type:"boolean"}
 
-dir_Dataset = 'Dataset'#@param {type:"string"}
+dir_Dataset = 'dataset'#@param {type:"string"}
 dir_Dataset = os.path.join(dir_main, dir_Dataset)
 path_sequences = os.path.join(dir_Dataset, 'sequences')
 path_poses = os.path.join(dir_Dataset, 'poses')
