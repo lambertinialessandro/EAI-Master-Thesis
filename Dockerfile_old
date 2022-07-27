@@ -57,6 +57,7 @@ CMD ls -la
 #	docker ps
 #	docker stop
 #	docker rmi -f dockerID
+#	docker container list -a
 
 
 #	sh pal_docker.sh -it be49813fd67c bash
