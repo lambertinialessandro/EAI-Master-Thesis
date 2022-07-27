@@ -27,6 +27,7 @@ class AbstractPreprocess(ABC):
     def processImage(self, imgPath):
         raise NotImplementedError
 
+    @abstractmethod
     def printImage(self, image):
         raise NotImplementedError
 
@@ -50,7 +51,7 @@ class UnchangedPreprocess(AbstractPreprocess):
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
         im = cv2.resize(im, self.imgSize, self.interpolation)
-        return im
+        return im / 255.0
 
 
 class SobelPreprocess(AbstractPreprocess):
@@ -84,7 +85,7 @@ class SobelPreprocess(AbstractPreprocess):
         gray = cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
         gray = np.reshape(gray, gray.shape + (1,))
 
-        return gray
+        return gray / 255.0
 
 
 class CroppingPreprocess(AbstractPreprocess):
@@ -112,7 +113,7 @@ class CroppingPreprocess(AbstractPreprocess):
             right = w2+iS_w2+1
 
         im = im[top:bottom, left:right]
-        return im
+        return im / 255.0
 
 
 class QuatPurePreprocess(AbstractPreprocess):
@@ -132,7 +133,7 @@ class QuatPurePreprocess(AbstractPreprocess):
 
         quatImg = np.concatenate((imBlack, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
-        return quatImg
+        return quatImg / 255.0
 
 
 class QuatGrayPreprocess(AbstractPreprocess):
@@ -152,7 +153,7 @@ class QuatGrayPreprocess(AbstractPreprocess):
 
         quatImg = np.concatenate((imGray, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
-        return quatImg
+        return quatImg / 255.0
 
 
 class QuadCEDPreprocess(AbstractPreprocess):
@@ -186,7 +187,7 @@ class QuadCEDPreprocess(AbstractPreprocess):
         im_CED = np.reshape(dilated, (376, 1241, 1))
         quatImg = np.concatenate((im_CED, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
-        return quatImg
+        return quatImg / 255.0
 
 
 class PreprocessEnum(Enum):
