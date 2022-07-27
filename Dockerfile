@@ -6,9 +6,9 @@ RUN apt-get update && apt-get install -y python3 python3-pip sudo wget unzip git
 RUN mkdir -p /home/app
 WORKDIR /home/app/
 
-RUN mkdir -p ./Dataset
-RUN mkdir -p ./Dataset/sequences
-RUN mkdir -p ./Dataset/poses
+# RUN mkdir -p ./Dataset
+# RUN mkdir -p ./Dataset/sequences
+# RUN mkdir -p ./Dataset/poses
 
 RUN mkdir -p ./History
 RUN mkdir -p ./Model
