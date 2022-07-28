@@ -48,8 +48,12 @@ CMD ls -la
 #	docker run --gpus all -ti dockerID python3 main.py
 #	docker run --gpus all --ipc=host -ti dockerID python3 main.py
 
+# docker container list -a | grep lambertini
 #	docker start c42d1d241094
 #	docker exec -ti c42d1d241094 /bin/bash
+
+
+
 #	sudo docker run c42d1d241094 -i -t ubuntu /bin/bash -v ./Dataset /home/app/
 
 
