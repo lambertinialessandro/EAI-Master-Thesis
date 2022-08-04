@@ -944,7 +944,9 @@ if __name__ == "__main__":
 
     PM.printI(bcolors.LIGHTGREEN+"Info training:"+bcolors.ENDC)
     PM.printI(bcolors.LIGHTYELLOW+"name Network: {}".format(name_net)+bcolors.ENDC)
-    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC+"\n")
+    PM.printI(bcolors.LIGHTYELLOW+"size images: {}x{}".format(params.WIDTH, params.HEIGHT)+bcolors.ENDC)
+    PM.printD(bcolors.LIGHTCYAN+"step: {}".format(params.STEP)+bcolors.ENDC+"\n")
+
 
     PM.printI(bcolors.LIGHTYELLOW+"starting epoch: {}".format(start_e)+bcolors.ENDC)
     PM.printI(bcolors.LIGHTYELLOW+"number epochs: {}".format(params.NUM_EPOCHS)+bcolors.ENDC)
