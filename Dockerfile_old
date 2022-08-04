@@ -66,3 +66,17 @@ CMD ls -la
 
 
 
+# 	docker build -t deep_vo:1.0 .
+REPOSITORY    TAG                        IMAGE ID       CREATED          SIZE
+deep_vo       1.0                        74782827347b   12 minutes ago   7.31GB
+
+
+#	docker run -it 74782827347b /bin/bash
+
+#	docker cp "/home/francescofrattolillo/dataset" 74a6d384dd48:/home/app/
+
+
+
+# apt-get install ffmpeg libsm6 libxext6  -y
+
+
