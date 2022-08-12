@@ -938,7 +938,13 @@ if __name__ == "__main__":
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
                                             (params.WIDTH, params.HEIGHT))
-
+    elif type_net == 5: # UNCHANGED
+        typeModel = NetworkFactory.ModelEnum.QuaternionDeepVONet
+        params.CHANNELS = 8
+        params.suffixType = "QUAT_PURE"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_PURE,
+                                            (params.WIDTH, params.HEIGHT))
     else:
         raise ValueError
 
