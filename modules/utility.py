@@ -24,17 +24,17 @@ def isRotationMatrix(R):
 def rotationMatrix2EulerAngles(R):
     assert(isRotationMatrix(R))
 
-    sy = math.sqrt(R[0,0]*R[0,0] + R[1,0]*R[1,0])
-    if  sy < 1e-6:
-        x = math.atan2(-R[1,2], R[1,1])
-        y = math.atan2(-R[2,0], sy)
-        z = 0
+    sin_theta = math.sqrt(R[0,0]*R[0,0] + R[1,0]*R[1,0])
+    if  sin_theta < 1e-6:
+        psi = math.atan2(-R[1,2], R[1,1])
+        theta = math.atan2(-R[2,0], sin_theta)
+        phi = 0
     else:
-        x = math.atan2(R[2,1] , R[2,2])
-        y = math.atan2(-R[2,0], sy)
-        z = math.atan2(R[1,0], R[0,0])
+        psi = math.atan2(R[2,1] , R[2,2])
+        theta = math.atan2(-R[2,0], sin_theta)
+        phi = math.atan2(R[1,0], R[0,0])
 
-    return np.array([x, y, z])
+    return np.array([psi, theta, phi])
 
 def poseFile2poseRobot(posef):
     p = np.array([posef[3], posef[7], posef[11]])
