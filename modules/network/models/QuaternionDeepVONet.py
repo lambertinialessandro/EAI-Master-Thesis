@@ -100,11 +100,12 @@ class QuaternionDeepVONet_FSM(nn.Module):
         self.fsm_block = FSM()
         self.flatten = nn.Flatten()
 
-        self.lstm = nn.LSTM(input_size=input_size_LSTM, hidden_size=hidden_size_LSTM,
-                            num_layers=2, dropout=0.5, batch_first=True)
-        self.lstm_dropout = nn.Dropout(0.5)
+        self.linear_output1 = nn.Linear(in_features=input_size_LSTM, out_features=1000)
+        self.lstm_dropout1 = nn.Dropout(0.5)
+        self.linear_output2 = nn.Linear(in_features=1000, out_features=500)
+        self.lstm_dropout2 = nn.Dropout(0.5)
 
-        self.linear_output = nn.Linear(in_features=hidden_size_LSTM, out_features=6)
+        self.linear_output = nn.Linear(in_features=500, out_features=6)
 
     def forward(self, x):
         x = self.block1(x)
@@ -119,11 +120,11 @@ class QuaternionDeepVONet_FSM(nn.Module):
 
         x = self.fsm_block(x)
         x = self.flatten(x)
-        print(x.size())
 
-        x, _ = self.lstm(x)
-        print(x.size())
-        x = self.lstm_dropout(x)
+        x = self.linear_output1(x)
+        x = self.lstm_dropout1(x)
+        x = self.linear_output2(x)
+        x = self.lstm_dropout2(x)
 
         x = self.linear_output(x)
         return x
