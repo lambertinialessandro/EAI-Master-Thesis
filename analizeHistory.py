@@ -74,31 +74,40 @@ def plot_graph(dir_History, name, lossName):
                         totLosses['test'][currPos] = app_d['tot']
                         currPos = currPos + 1
 
-    dimX = len(totLosses['train'])
-    x = np.linspace(1, dimX, dimX)
+    dimX1 = len(totLosses['train'])
+    x1 = np.linspace(1, dimX1, dimX1)
 
-    y_tot = [totLosses['train'][k]['tot'] for k in totLosses['train'].keys()]
-    y_pos = [totLosses['train'][k]['pose'] for k in totLosses['train'].keys()]
-    y_rot = [totLosses['train'][k]['rot'] for k in totLosses['train'].keys()]
+    y_tot1 = [totLosses['train'][k]['tot'] for k in totLosses['train'].keys()]
+    y_pos1 = [totLosses['train'][k]['pose'] for k in totLosses['train'].keys()]
+    y_rot1 = [totLosses['train'][k]['rot'] for k in totLosses['train'].keys()]
 
     plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(x, y_tot, color='red')
-    plt.plot(x, y_pos, color='blue')
-    plt.plot(x, y_rot, color='green')
+    plt.plot(x1, y_tot1, color='red')
+    plt.plot(x1, y_pos1, color='blue')
+    plt.plot(x1, y_rot1, color='green')
     plt.legend(['total loss', 'position loss', 'rotation loss'])
     plt.show()
 
-    y_tot = [totLosses['test'][k]['tot'] for k in totLosses['test'].keys()]
-    y_pos = [totLosses['test'][k]['pose'] for k in totLosses['test'].keys()]
-    y_rot = [totLosses['test'][k]['rot'] for k in totLosses['test'].keys()]
+    y_tot2 = [totLosses['test'][k]['tot'] for k in totLosses['test'].keys()]
+    y_pos2 = [totLosses['test'][k]['pose'] for k in totLosses['test'].keys()]
+    y_rot2 = [totLosses['test'][k]['rot'] for k in totLosses['test'].keys()]
 
-    dimX = len(y_tot)
+    dimX2 = len(y_tot2)
+    x2 = np.linspace(1, dimX2, dimX2)
+
+    plt.figure(figsize=(8, 6), dpi=80)
+    plt.plot(x2, y_tot2, color='red')
+    plt.plot(x2, y_pos2, color='blue')
+    plt.plot(x2, y_rot2, color='green')
+    plt.legend(['total loss', 'position loss', 'rotation loss'])
+    plt.show()
+
+    dimX = min(dimX1, dimX2)
     x = np.linspace(1, dimX, dimX)
 
     plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(x, y_tot, color='red')
-    plt.plot(x, y_pos, color='blue')
-    plt.plot(x, y_rot, color='green')
+    plt.plot(x, y_tot1, color='red')
+    plt.plot(x, y_tot2, color='blue')
     plt.legend(['total loss', 'position loss', 'rotation loss'])
     plt.show()
 
