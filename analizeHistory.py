@@ -51,7 +51,10 @@ def plot_graph(dir_History, name, lossName):
             with open(os.path.join(dir_History, name, f"loss_{name}[{i}].txt"), "r") as f:
                 state = 0
                 for line in f:
-                    app_d = eval(line)
+                    try:
+                        app_d = eval(line)
+                    except NameError:
+                        continue
                     if state == 0:
                         state = 1
                         totLosses['train'][currPos] = app_d['tot']
