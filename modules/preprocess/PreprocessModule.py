@@ -43,8 +43,8 @@ class AbstractPreprocess(ABC):
 
 
 
-class UnchangedPreprocess(AbstractPreprocess):
-    name = "UNCHANGED"
+class ResizedPreprocess(AbstractPreprocess):
+    name = "RESIZED"
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -71,11 +71,7 @@ class SobelPreprocess(AbstractPreprocess):
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        try:
-            im = cv2.resize(im, self.imgSize, self.interpolation)
-        except:
-            print(imgPath)
-            raise Exception
+        im = cv2.resize(im, self.imgSize, self.interpolation)
 
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
@@ -165,8 +161,8 @@ class QuatGrayPreprocess(AbstractPreprocess):
         return quatImg / 255.0
 
 
-class QuadCEDPreprocess(AbstractPreprocess):
-    name = "QUAT_CED"
+class QuadSobelPreprocess(AbstractPreprocess):
+    name = "QUAT_SOBEL"
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -178,36 +174,22 @@ class QuadCEDPreprocess(AbstractPreprocess):
     def processImage(self, imgPath):
         imRGB = cv2.imread(imgPath, self.imreadFlag)
         imRGB = cv2.cvtColor(imRGB, cv2.COLOR_BGR2RGB)
-        imRGB = cv2.resize(imRGB, (1241, 376), interpolation = self.interpolation)
-        imGray = cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY)
+        h, w, _ = imRGB.shape
+        imGray = np.reshape(cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY), (h, w, 1))
 
-        canny_img = cv2.Canny(np.array(imRGB), 100, 200)
-        canny_img = Image.fromarray(canny_img)
-
-        scaled_entropy = img_as_ubyte(canny_img / np.max(canny_img))
-        entropy_image = entropy(scaled_entropy, disk(2))
-        scaled_entropy = entropy_image / entropy_image.max()
-        mask = scaled_entropy > 0.75
-        maskedImg = imGray * mask
-
-        dilated = grey_dilation(maskedImg, footprint=np.ones((3,3)))
-        dilated = grey_erosion(dilated, size=(3,3))
-        dilated = np.array(Image.fromarray(dilated))
-
-        im_CED = np.reshape(dilated, (376, 1241, 1))
-        quatImg = np.concatenate((im_CED, imRGB), 2)
+        quatImg = np.concatenate((imGray, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
         return quatImg / 255.0
 
 
 class PreprocessEnum(Enum):
-    UNCHANGED = "UNCHANGED"
+    RESIZED = "RESIZED"
     SOBEL = "SOBEL"
     CROPPING = "CROPPING"
 
     QUAT_PURE = "QUAT_PURE"
     QUAT_GRAY = "QUAT_GRAY"
-    QUAT_CED = "QUAT_CED" # CANNY_ENTOPY_DILATED
+    QUAT_SOBEL = "QUAT_SOBEL"
 
 
 class PreprocessFactory():
@@ -215,8 +197,8 @@ class PreprocessFactory():
 
     def build(type_p: PreprocessEnum,
               imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
-        if type_p == PreprocessEnum.UNCHANGED:
-            preprocess = UnchangedPreprocess(imgSize, imreadFlag=imreadFlag,
+        if type_p == PreprocessEnum.RESIZED:
+            preprocess = ResizedPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
         elif type_p == PreprocessEnum.SOBEL:
             preprocess = SobelPreprocess(imgSize, imreadFlag=imreadFlag,
@@ -231,8 +213,8 @@ class PreprocessFactory():
         elif type_p == PreprocessEnum.QUAT_GRAY:
             preprocess = QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
-        elif type_p == PreprocessEnum.QUAT_CED:
-            preprocess = QuadCEDPreprocess(imgSize, imreadFlag=imreadFlag,
+        elif type_p == PreprocessEnum.QUAT_SOBEL:
+            preprocess = QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag,
                                              interpolation=interpolation)
 
         else:
@@ -241,14 +223,14 @@ class PreprocessFactory():
         return preprocess
 
     def listPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
-        return [UnchangedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+        return [ResizedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 SobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 CroppingPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 ]
     def listQuatPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
         return [QuatPurePreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                QuadCEDPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+                QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 ]
 
     def listAllPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
