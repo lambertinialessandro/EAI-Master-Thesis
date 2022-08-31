@@ -1,4 +1,8 @@
 
+import sys
+sys.path.append('../../')
+
+
 from enum import Enum
 
 import cv2
@@ -50,6 +54,7 @@ class UnchangedPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         im = cv2.resize(im, self.imgSize, self.interpolation)
         return im / 255.0
 
@@ -65,6 +70,7 @@ class SobelPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         try:
             im = cv2.resize(im, self.imgSize, self.interpolation)
         except:
@@ -99,15 +105,16 @@ class CroppingPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         im = cv2.imread(imgPath, self.imreadFlag)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         h, w, _ = im.shape
         w2 = round(w/2)
 
-        top = h-self.imgSize[1]
+        top = h-self.imgSize[0]
         bottom = h
 
-        iS_w2 = round(self.imgSize[0]/2)
+        iS_w2 = round(self.imgSize[1]/2)
         left = w2-iS_w2
-        if self.imgSize[0]%2 == 0:
+        if self.imgSize[1]%2 == 0:
             right = w2+iS_w2
         else:
             right = w2+iS_w2+1
@@ -128,6 +135,7 @@ class QuatPurePreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         imRGB = cv2.imread(imgPath, self.imreadFlag)
+        imRGB = cv2.cvtColor(imRGB, cv2.COLOR_BGR2RGB)
         h, w, _ = imRGB.shape
         imBlack = np.zeros((h, w, 1), np.uint8)
 
@@ -148,6 +156,7 @@ class QuatGrayPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         imRGB = cv2.imread(imgPath, self.imreadFlag)
+        imRGB = cv2.cvtColor(imRGB, cv2.COLOR_BGR2RGB)
         h, w, _ = imRGB.shape
         imGray = np.reshape(cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY), (h, w, 1))
 
@@ -168,6 +177,7 @@ class QuadCEDPreprocess(AbstractPreprocess):
 
     def processImage(self, imgPath):
         imRGB = cv2.imread(imgPath, self.imreadFlag)
+        imRGB = cv2.cvtColor(imRGB, cv2.COLOR_BGR2RGB)
         imRGB = cv2.resize(imRGB, (1241, 376), interpolation = self.interpolation)
         imGray = cv2.cvtColor(imRGB, cv2.COLOR_BGR2GRAY)
 
@@ -249,8 +259,8 @@ class PreprocessFactory():
 def main():
     PM.setFlags(True, True, False)
 
-    imgPath = "./Dataset/sequences/00/image_2/000000.png"
-    imgSize = (256, 256)
+    imgPath = "../../Dataset/sequences/00/image_2/000005.png"
+    imgSize = (1280, 384)
 
     ffs = PreprocessFactory.listAllPreproc(imgSize)
 
