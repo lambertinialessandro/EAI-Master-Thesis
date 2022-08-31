@@ -1,13 +1,4 @@
 
-"""
-r11 r12 r13 tx
-r21 r22 r23 ty
-r31 r32 r33 tz
-0   0   0   1
-is represented in the file as a single row:
-r11 r12 r13 tx r21 r22 r23 ty r31 r32 r33 tz
-"""
-
 import os
 import time
 import numpy as np
@@ -135,8 +126,7 @@ if __name__ == "__main__":
     path_poses = params.path_poses
 
     listSequences = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
-        # ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']  os.listdir(path_sequences):
-    listDirs = ['image_2'] # ['image_2']  os.listdir(dirSeq)
+    listDirs = ['image_2']
     listTypePreproc = [PreprocessFactory.build(
                             PreprocessFactory.PreprocessEnum.SOBEL,
                             (params.WIDTH, params.HEIGHT)),
