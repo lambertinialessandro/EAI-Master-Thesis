@@ -53,6 +53,7 @@ def trainEP(model, criterion, optimizer, imageDir, prepreocF, sequences=params.t
                 poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
                 rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
 
+                optimizer.zero_grad()
                 totLoss.backward()
                 optimizer.step()
 
@@ -817,26 +818,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
-    """
-!python3 trainModel.py
-    --type 4
-    --size 1
-    --name "dsc_small_100"
-
-    --path "drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/"
-
-    --load_file "dsc_small_100[1-14]"
-    --start_e 1
-    --end_e 200
-
-    --dim_LSTM 100
-
-    --online 0
-    """
-
-    parser.add_argument('--type', default='2', type=int, help=' int [1-4]: SOBEL/UNCHANGED')
-    parser.add_argument('--size', default='3', type=int, help=' int [1-3]: small/medium/big')
-    parser.add_argument('--name', default='docker_test', type=str, help=' str: name network')
+    parser.add_argument('--type', default='1', type=int, help=' int [1-6]')
+    parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
+    parser.add_argument('--name', default='', type=str, help=' str: name network')
     parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
     parser.add_argument('--load_file', default="", type=str, help=' str: name network')
     parser.add_argument('--start_e', default=1, type=int, help=' int: initial number of epoch')
@@ -885,10 +869,8 @@ if __name__ == "__main__":
         type_train = enumTrain.preprocessed_random
     elif online == 1:
         type_train = enumTrain.online_random_RDG
-        # online  online_random  online_random_RDG
     elif online == 0:
         type_train = enumTrain.preprocessed_random_RDG
-        # preprocessed  preprocessed_random  preprocessed_random_RDG
     else:
         raise ValueError
 
@@ -907,39 +889,43 @@ if __name__ == "__main__":
     params.suffixFileNameLoad = name_file_load
 
 
-    if type_net == 1: # SOBEL
+    if type_net == 1:
         typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
-        params.CHANNELS = 6 # 2
-        params.suffixType = "UNCHANGED" # "SOBEL"
-        params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6) # 384
+        params.CHANNELS = 2
+        params.suffixType = "SOBEL"
+        params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
-        params.DEVICE = torch.device("cuda")
-    elif type_net == 2: # UNCHANGED
+    elif type_net == 2:
         typeModel = NetworkFactory.ModelEnum.DeepVONet
         params.CHANNELS = 6
-        params.suffixType = "UNCHANGED"
+        params.suffixType = "RESIZED"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
-        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED,
                                             (params.WIDTH, params.HEIGHT))
-        params.DEVICE = torch.device("cpu") # TODO
-    elif type_net == 3: # UNCHANGED_FSM
-        typeModel = NetworkFactory.ModelEnum.DeepVONet_FSM
-        params.CHANNELS = 6
-        params.suffixType = "UNCHANGED"
+    elif type_net == 3:
+        typeModel = NetworkFactory.ModelEnum.QuaternionSmallDeepVONet
+        params.CHANNELS = 8
+        params.suffixType = "QUAT_SOBEL"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
-        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_SOBEL,
                                             (params.WIDTH, params.HEIGHT))
-        params.DEVICE = torch.device("cuda")
-    elif type_net == 4: # UNCHANGED
+    elif type_net == 4:
         typeModel = NetworkFactory.ModelEnum.DSC_VONet
         params.CHANNELS = 6
-        params.suffixType = "UNCHANGED"
+        params.suffixType = "RESIZED"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
-        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.UNCHANGED,
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED,
                                             (params.WIDTH, params.HEIGHT))
-    elif type_net == 5: # UNCHANGED
+    elif type_net == 5:
         typeModel = NetworkFactory.ModelEnum.QuaternionDeepVONet
+        params.CHANNELS = 8
+        params.suffixType = "QUAT_PURE"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_PURE,
+                                            (params.WIDTH, params.HEIGHT))
+    elif type_net == 6:
+        typeModel = NetworkFactory.ModelEnum.QuaternionDSC_VONet
         params.CHANNELS = 8
         params.suffixType = "QUAT_PURE"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
@@ -979,9 +965,6 @@ if __name__ == "__main__":
         NetworkFactory.build(typeModel, params.DIM_LSTM, params.HIDDEN_SIZE_LSTM, params.DEVICE,
                              typeCriterion,
                              typeOptimizer)
-
-    # for parameter in model.parameters():
-    #     PM.printI(str(parameter.size()))
 
     trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train, plot_test=True)
 
