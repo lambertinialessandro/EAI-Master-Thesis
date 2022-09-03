@@ -24,8 +24,5 @@ class NetworkFactory():
         PM.printI(bcolors.LIGHTYELLOW+"criterion: {}".format(typeCriterion)+bcolors.ENDC)
         PM.printI(bcolors.LIGHTYELLOW+"optimizer: {}".format(typeOptimizer)+bcolors.ENDC+"\n")
 
-        # for parameter in model.parameters():
-        #     PM.printD(str(parameter.size()))
-
         return model, criterion, optimizer
 
