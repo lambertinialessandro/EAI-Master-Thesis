@@ -25,8 +25,6 @@ class QuatC_Block(nn.Module):
 class QuaternionSmallDeepVONet(nn.Module):
     def __init__(self, input_size_LSTM, hidden_size_LSTM):
         super(QuaternionSmallDeepVONet, self).__init__()
-        # 6, 64, 128, 256, 512, 512, 1024
-        # 2, 24,  48,  96, 192, 192, 384
 
         self.block1 = QuatC_Block(8, 24, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
