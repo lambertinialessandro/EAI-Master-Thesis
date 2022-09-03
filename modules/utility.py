@@ -57,7 +57,7 @@ class STDOUT_holder:
         filledLength = int(self.length * value // self.max_v)
         bar = '█' * filledLength + '-' * (self.length - filledLength)
         print(f'\r### Info Progress:|{bar}| {percent}% Complete', end='\r')
-        # Print New Line on Complete
+
         if value == self.max_v:
             print()
 
@@ -66,7 +66,7 @@ class STDOUT_holder:
         filledLength = int(self.length * value // self.max_v)
         bar = '█' * filledLength + '-' * (self.length - filledLength)
         print(f'\r### Info Progress:|{bar}| {percent}% Complete', end='\r')
-        # Print New Line on Complete
+
         if value == self.max_v:
             print()
 
