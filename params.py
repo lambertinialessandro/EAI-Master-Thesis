@@ -59,15 +59,13 @@ else:
 suffixType = "SOBEL" # UNCHANGED, SOBEL, CROPPING, QUAT_PURE, QUAT_GRAY, QUAT_CED
 
 BACH_SIZE = 10 #@param {type:"number"}
-NUM_BACH = 4 #@param {type:"number"} # = NUM_BACH * BACH_SIZE
-RDG_ITER = 1 #@param {type:"number"}
 STEP = 5 # 5 #@param {type:"number"}
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
 #@param[96, 192, 384] {type:"raw", allow-input: false}
 #@param [6, 8] {type:"raw", allow-input: false}
 
-__dim_image = 3
+__dim_image = 1
 if __dim_image == 1:
     DIM_LSTM = 10240 # 3840 = 384 * 10        10240 # = 1024 * 10
     WIDTH = 320
@@ -93,8 +91,10 @@ NUM_POSES = 6
 
 img_size = (WIDTH, HEIGHT) # (1280,384) # (640, 192) # (320, 96)
 
+
+# ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
 # [4541, 1101, 4661, 4071, 1591]
-trainingSeries = ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
+trainingSeries = ["00", "01", "02", "08", "09"]
 testingSeries = ["03", "04", "05", "06", "07", "10"]
 
 
