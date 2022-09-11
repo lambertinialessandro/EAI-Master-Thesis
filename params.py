@@ -58,7 +58,7 @@ else:
     # TODO
 suffixType = "SOBEL" # UNCHANGED, SOBEL, CROPPING, QUAT_PURE, QUAT_GRAY, QUAT_CED
 
-BACH_SIZE = 10 #@param {type:"number"}
+BACH_SIZE = 100 #@param {type:"number"}
 STEP = 5 # 5 #@param {type:"number"}
 
 #@param [320, 640, 1280] {type:"raw", allow-input: false}
