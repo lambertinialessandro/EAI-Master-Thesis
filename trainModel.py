@@ -410,31 +410,37 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
     model.training = True
 
     train_initT = time.time()
-    rdg = RandomDataGeneretor(sequences, imageDir,
-                              RandomDataGeneretor.GeneratorType.ONLINE,
-                              prepreocF, attach=True)
-    train_numOfBatch = rdg.maxIters-1
+    rdg = RandomDataGeneretor(RandomDataGeneretor.GeneratorType.ONLINE,
+                              prepreocF, sequences, imageDir, attach=True)
+    # rdg = RandomDataGeneretor(sequences, imageDir,
+    #                           RandomDataGeneretor.GeneratorType.ONLINE,
+    #                           prepreocF, attach=True)
+    train_numOfBatch = rdg.maxPos-1
     PB = PM.printProgressBarI(0, train_numOfBatch)
     outputs = []
 
+    h = model.init_hidden(2, params.DEVICE)
+    h = tuple([e.data for e in h])
+
     for inputs, labels, pos, seq, nb in rdg:
-        for i in range(nb):
-            torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
+        model.zero_grad()
 
-            model.zero_grad()
+        outputs, h = model(inputs, h)
 
-            outputs = model(inputs[i])
+        totLoss = criterion(outputs, labels)
+        poseLoss = criterion(outputs[0:3], labels[0:3]).item()
+        rotLoss = criterion(outputs[3:6], labels[3:6]).item()
 
-            totLoss = criterion(outputs, labels[i])
-            poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
-            rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
 
-            totLoss.backward()
-            optimizer.step()
+        for i in range(len(seq)):
+            loss_train[seq[i]]["tot"].append(totLoss[i].item())
+            loss_train[seq[i]]["pose"].append(poseLoss[i])
+            loss_train[seq[i]]["rot"].append(rotLoss[i])
 
-            loss_train[seq[i]]["tot"].append(totLoss.item())
-            loss_train[seq[i]]["pose"].append(poseLoss)
-            loss_train[seq[i]]["rot"].append(rotLoss)
+        totLoss.backward()
+        optimizer.step()
+
         del inputs, labels, totLoss, poseLoss, rotLoss
         gc.collect()
         torch.cuda.empty_cache()
@@ -818,14 +824,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
-    parser.add_argument('--type', default='1', type=int, help=' int [1-6]')
+    parser.add_argument('--type', default='2', type=int, help=' int [1-6]')
     parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
     parser.add_argument('--name', default='', type=str, help=' str: name network')
     parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
     parser.add_argument('--load_file', default="", type=str, help=' str: name network')
     parser.add_argument('--start_e', default=1, type=int, help=' int: initial number of epoch')
     parser.add_argument('--end_e', default=200, type=int, help=' int: final number of epoch')
-    parser.add_argument('--dim_LSTM', default=1000, type=int, help=' int: number of epochs')
+    parser.add_argument('--dim_LSTM', default=100, type=int, help=' int: number of epochs')
     parser.add_argument('--online', default=1, type=int,
                         help=' int [0-3]: online dataset preprocessing')
     args = parser.parse_args()
