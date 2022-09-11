@@ -7,11 +7,6 @@ from enum import Enum
 
 import cv2
 import numpy as np
-from PIL import Image
-from scipy.ndimage import grey_dilation, grey_erosion
-from skimage.util import img_as_ubyte
-from skimage.morphology import disk
-from skimage.filters.rank import entropy
 
 from abc import ABC, abstractmethod
 
@@ -195,6 +190,7 @@ class PreprocessEnum(Enum):
 class PreprocessFactory():
     PreprocessEnum = PreprocessEnum
 
+    @staticmethod
     def build(type_p: PreprocessEnum,
               imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
         if type_p == PreprocessEnum.RESIZED:
@@ -222,17 +218,21 @@ class PreprocessFactory():
 
         return preprocess
 
+    @staticmethod
     def listPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
         return [ResizedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 SobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 CroppingPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 ]
+
+    @staticmethod
     def listQuatPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
         return [QuatPurePreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 ]
 
+    @staticmethod
     def listAllPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
         return [*PreprocessFactory.listPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
                 *PreprocessFactory.listQuatPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation)]
