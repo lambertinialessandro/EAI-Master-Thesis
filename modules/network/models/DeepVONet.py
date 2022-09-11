@@ -21,10 +21,12 @@ class C_Block(nn.Module):
         x = self.drop(x)
         return x
 
-
 class DeepVONet(nn.Module):
     def __init__(self, input_size_LSTM, hidden_size_LSTM):
         super(DeepVONet, self).__init__()
+
+        self.input_size_LSTM = input_size_LSTM
+        self.hidden_size_LSTM = hidden_size_LSTM
 
         self.block1 = C_Block(6, 64, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
@@ -47,30 +49,62 @@ class DeepVONet(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        self.lstm = nn.LSTM(input_size=input_size_LSTM, hidden_size=hidden_size_LSTM,
+        self.lstm = nn.LSTM(input_size=self.input_size_LSTM, hidden_size=self.hidden_size_LSTM,
                             num_layers=2, dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
 
-        self.linear_output = nn.Linear(in_features=hidden_size_LSTM, out_features=6)
+        self.linear_output = nn.Linear(in_features=self.hidden_size_LSTM, out_features=6)
 
-    def forward(self, x):
+    def forward(self, x, h):
+        #print("x: ", x.size())
+        #print([h[i].size() for i in range(len(h))])
+
         x = self.block1(x)
+        #print("x: ", x.size())
+
         x = self.block2(x)
+        #print("x: ", x.size())
+
         x = self.block3(x)
+        #print("x: ", x.size())
+
         x = self.block3_1(x)
+        #print("x: ", x.size())
+
         x = self.block4(x)
+        #print("x: ", x.size())
+
         x = self.block4_1(x)
+        #print("x: ", x.size())
+
         x = self.block5(x)
+        #print("x: ", x.size())
+
         x = self.block5_1(x)
+        #print("x: ", x.size())
+
         x = self.block6(x)
+        #print("x: ", x.size())
 
         x = self.flatten(x)
+        #print("x: ", x.size())
 
-        x, _ = self.lstm(x)
+        x, h = self.lstm(x, h)
+        #print("x: ", x.size())
+        #print([h[i].size() for i in range(len(h))])
+
         x = self.lstm_dropout(x)
+        print("x: ", x.size())
 
         x = self.linear_output(x)
-        return x
+        #print("x: ", x.size())
+
+        return x, h
+
+    def init_hidden(self, batch_size, device):
+        weight = next(self.parameters()).data
+        hidden = weight.new(2, batch_size, self.hidden_size_LSTM).zero_().to(device)
+        return hidden
 
 
 class DeepVONet_FSM(nn.Module):
