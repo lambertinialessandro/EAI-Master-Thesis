@@ -420,25 +420,24 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
     outputs = []
 
     h = model.init_hidden(2, params.DEVICE)
-    h = tuple([e.data for e in h])
 
     for inputs, labels, pos, seq, nb in rdg:
         torch.cuda.empty_cache()
+        h = tuple([e.data for e in h])
         model.zero_grad()
 
         outputs, h = model(inputs, h)
 
-        totLoss = criterion(outputs, labels)
-        poseLoss = criterion(outputs[0:3], labels[0:3]).item()
-        rotLoss = criterion(outputs[3:6], labels[3:6]).item()
-
-
         for i in range(len(seq)):
-            loss_train[seq[i]]["tot"].append(totLoss[i].item())
-            loss_train[seq[i]]["pose"].append(poseLoss[i])
-            loss_train[seq[i]]["rot"].append(rotLoss[i])
+            totLoss = criterion(outputs[i], labels[i])
+            poseLoss = criterion(outputs[i, 0:3], labels[i, 0:3]).item()
+            rotLoss = criterion(outputs[i, 3:6], labels[i, 3:6]).item()
 
-        totLoss.backward()
+            loss_train[seq[i]]["tot"].append(totLoss.item())
+            loss_train[seq[i]]["pose"].append(poseLoss)
+            loss_train[seq[i]]["rot"].append(rotLoss)
+
+        totLoss.backward(retain_graph=True)
         optimizer.step()
 
         del inputs, labels, totLoss, poseLoss, rotLoss
