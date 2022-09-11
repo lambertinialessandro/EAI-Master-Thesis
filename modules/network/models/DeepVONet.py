@@ -90,11 +90,11 @@ class DeepVONet(nn.Module):
         #print("x: ", x.size())
 
         x, h = self.lstm(x, h)
-        #print("x: ", x.size())
-        #print([h[i].size() for i in range(len(h))])
+        print("x: ", x.size())
+        print([h[i].size() for i in range(len(h))])
 
         x = self.lstm_dropout(x)
-        print("x: ", x.size())
+        #print("x: ", x.size())
 
         x = self.linear_output(x)
         #print("x: ", x.size())
