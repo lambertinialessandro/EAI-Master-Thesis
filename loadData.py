@@ -215,7 +215,7 @@ class RandomDataGeneretor():
 
         self.dgToDo = []
         for s in sequences:
-            dg = DataGeneratorFactory.build(type_dg, prepreocF, s, imageDir, attach=self.attach)
+            dg = DataGeneratorFactory.build(type_dg, prepreocF, s, imageDir, attach=False)
 
             self.dgToDo.append(dg)
             self.maxPos = self.maxPos + dg.maxPos
