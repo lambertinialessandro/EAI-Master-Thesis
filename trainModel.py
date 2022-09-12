@@ -121,44 +121,45 @@ def trainEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.t
     for sequence in sequences:
         PM.printI(bcolors.LIGHTGREEN+"Sequence: {}".format(sequence)+bcolors.ENDC)
         dg = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=True)
-        train_numOfBatch = dg.numBatchImgs - 1
+        train_numOfBatch = dg.maxPos - 1
         PB = PM.printProgressBarI(0, train_numOfBatch)
         outputs = []
         pts_yTrain = np.array([[0, 0, 0, 0, 0, 0]])
         pts_out = np.array([[0, 0, 0, 0, 0, 0]])
 
+        h = model.init_hidden(2, params.DEVICE)
+
         for inputs, labels, pos, nb in dg:
-            for i in range(nb):
-                torch.cuda.empty_cache()
+            torch.cuda.empty_cache()
 
-                model.zero_grad()
+            model.zero_grad()
 
-                outputs = model(inputs[i])
-                if params.DEVICE.type == 'cuda':
-                    det_outputs = outputs.cpu().detach().numpy()
-                    det_labels = labels[i].cpu().detach().numpy()
-                else:
-                    det_outputs = outputs.detach().numpy()
-                    det_labels = labels[i].detach().numpy()
+            outputs, h = model(inputs, h)
+            if params.DEVICE.type == 'cuda':
+                det_outputs = outputs.cpu().detach().numpy()
+                det_labels = labels.cpu().detach().numpy()
+            else:
+                det_outputs = outputs.detach().numpy()
+                det_labels = labels.detach().numpy()
 
-                totLoss = criterion(outputs, labels[i])
-                poseLoss = criterion(outputs[0:3], labels[i][0:3]).item()
-                rotLoss = criterion(outputs[3:6], labels[i][3:6]).item()
+            totLoss = criterion(outputs, labels)
+            poseLoss = criterion(outputs[0:3], labels[0:3]).item()
+            rotLoss = criterion(outputs[3:6], labels[3:6]).item()
 
-                totLoss.backward()
-                optimizer.step()
+            loss_train[sequence]["tot"].append(totLoss.item())
+            loss_train[sequence]["pose"].append(poseLoss)
+            loss_train[sequence]["rot"].append(rotLoss)
 
-                loss_train[sequence]["tot"].append(totLoss.item())
-                loss_train[sequence]["pose"].append(poseLoss)
-                loss_train[sequence]["rot"].append(rotLoss)
+            totLoss.backward(retain_graph=True)
+            optimizer.step()
 
-                for j in range(params.BACH_SIZE):
-                    pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
-                    pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+            for j in range(params.BACH_SIZE):
+                pts_yTrain = np.append(pts_yTrain, [pts_yTrain[-1] + det_labels[j]], axis=0)
+                pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
-            PB.update(i)
+            PB.update(pos)
         del dg
         gc.collect()
         torch.cuda.empty_cache()
@@ -437,6 +438,7 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
             loss_train[seq[i]]["pose"].append(poseLoss)
             loss_train[seq[i]]["rot"].append(rotLoss)
 
+        totLoss = criterion(outputs, labels)
         totLoss.backward(retain_graph=True)
         optimizer.step()
 
@@ -833,7 +835,7 @@ if __name__ == "__main__":
     parser.add_argument('--start_e', default=1, type=int, help=' int: initial number of epoch')
     parser.add_argument('--end_e', default=200, type=int, help=' int: final number of epoch')
     parser.add_argument('--dim_LSTM', default=100, type=int, help=' int: number of epochs')
-    parser.add_argument('--online', default=1, type=int,
+    parser.add_argument('--online', default=5, type=int,
                         help=' int [0-3]: online dataset preprocessing')
     args = parser.parse_args()
 
@@ -870,7 +872,11 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
-    if online == 3:
+    if online == 5:
+        type_train = trainEnum.online
+    elif online == 4:
+        type_train = trainEnum.preprocessed
+    elif online == 3:
         type_train = trainEnum.online_random
     elif online == 2:
         type_train = trainEnum.preprocessed_random
