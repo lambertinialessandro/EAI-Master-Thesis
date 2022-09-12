@@ -114,7 +114,7 @@ class DeepVONet_GRU(nn.Module):
                           num_layers=2, dropout=0.5, batch_first=True)
         self.lstm_dropout = nn.Dropout(0.5)
 
-        self.linear_output = nn.Linear(in_features=self.hidden_size_LSTM, out_features=6)
+        self.linear_output = nn.Linear(in_features=self.hidden_size_GRU, out_features=6)
 
     def forward(self, x, h):
         h = h.data
