@@ -70,8 +70,8 @@ class DeepVONet_LSTM(nn.Module):
 
         x = self.flatten(x)
 
-        print("x: ", x.size())
-        print("h: ", [h[i].size() for i in range(len(h))])
+        #print("x: ", x.size())
+        #print("h: ", [h[i].size() for i in range(len(h))])
         x, h = self.lstm(x, h)
 
         x = self.lstm_dropout(x)
@@ -135,8 +135,8 @@ class DeepVONet_GRU(nn.Module):
 
         x = self.flatten(x)
 
-        print("x: ", x.size())
-        print("h: ", [h[i].size() for i in range(len(h))])
+        #print("x: ", x.size())
+        #print("h: ", [h[i].size() for i in range(len(h))])
         x, h = self.gru(x, h)
 
         x = self.lstm_dropout(x)
