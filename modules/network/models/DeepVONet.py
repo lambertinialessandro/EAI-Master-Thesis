@@ -137,7 +137,7 @@ class DeepVONet_GRU(nn.Module):
 
         print("x: ", x.size())
         print("h: ", [h[i].size() for i in range(len(h))])
-        x, h = self.gru(x, h[0])
+        x, h = self.gru(x, h)
 
         x = self.lstm_dropout(x)
         x = self.linear_output(x)
@@ -146,7 +146,7 @@ class DeepVONet_GRU(nn.Module):
 
     def init_hidden(self, batch_size, device):
         w = next(self.parameters()).data
-        h = w.new(1, batch_size, self.hidden_size_GRU).zero_().to(device)
+        h = w.new(batch_size, self.hidden_size_GRU).zero_().to(device)
         return h
 
 
