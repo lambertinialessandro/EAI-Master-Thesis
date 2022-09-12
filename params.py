@@ -7,124 +7,196 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import math
 import torch
+from enum import Enum
 
-from modules.utility import PM
+from modules.network.ModelModule import ModelEnum
+from modules.network.CriterionModule import CriterionEnum
+from modules.network.OptimizerModule import OptimizerEnum
 
-#@markdown ---
-#@markdown ### Flags:
-FLAG_DOWNLOAD_DATASET = False #@param {type:"boolean"}
-FLAG_DEBUG_PRINT = True #@param {type:"boolean"}
-FLAG_INFO_PRINT = True #@param {type:"boolean"}
-FLAG_OUT_HTML = False #@param {type:"boolean"}
-PM.setFlags(FLAG_DEBUG_PRINT, FLAG_INFO_PRINT, FLAG_OUT_HTML)
-
-#@markdown ---
-#@markdown ### Files path:
-# global variables to save the tables/models
-dir_main = '.'#@param {type:"string"}
-
-#dir_main = 'drive/.shortcut-targets-by-id/1u8wbljmLaX2INDIFTQqsk3xLVCalv2_o/Thesis/'#@param {type:"string"}
-#FLAG_OUT_HTML = True #@param {type:"boolean"}
-
-dir_Dataset = 'dataset'#@param {type:"string"}
-dir_Dataset = os.path.join(dir_main, dir_Dataset)
-path_sequences = os.path.join(dir_Dataset, 'sequences')
-path_poses = os.path.join(dir_Dataset, 'poses')
-
-dir_Model = 'Model'#@param {type:"string"}
-dir_Model = os.path.join(dir_main, dir_Model)
-dir_History = 'History'#@param {type:"string"}
-dir_History = os.path.join(dir_main, dir_History)
-
-#@markdown ---
-#@markdown ### Model settings:
-    # TODO
-typeModel = "DeepVONet" #@param ["DeepVONet", "DeepVONet_FSM",
-                        #        "QuaternionDeepVONet", "QuaternionDeepVONet_FSM"] {type:"string"}
-typeCriterion = "MSELoss" #@param ["MSELoss"] {type:"string"}
-typeOptimizer = "Adam" #@param ["Adam", "SGD"] {type:"string"}
-
-#@markdown ---
-#@markdown ### Images settings:
-BACH_SIZE = 10 #@param {type:"number"}
-
-if typeModel == "DeepVONet":
-    CHANNELS = 6
-elif typeModel == "QuaternionDeepVONet":
-    CHANNELS = 8
-else:
-    raise ValueError
-
-    # TODO
-suffixType = "SOBEL" # UNCHANGED, SOBEL, CROPPING, QUAT_PURE, QUAT_GRAY, QUAT_CED
-
-BACH_SIZE = 100 #@param {type:"number"}
-STEP = 5 # 5 #@param {type:"number"}
-
-#@param [320, 640, 1280] {type:"raw", allow-input: false}
-#@param[96, 192, 384] {type:"raw", allow-input: false}
-#@param [6, 8] {type:"raw", allow-input: false}
-
-__dim_image = 1
-if __dim_image == 1:
-    DIM_LSTM = 10240 # 3840 = 384 * 10        10240 # = 1024 * 10
-    WIDTH = 320
-    HEIGHT = 96
-
-    # C = 1024 # TODO
-    # batch, dim1, dim2, channels = 10, 5, 2, 128 # TODO
-
-elif __dim_image == 2:
-    DIM_LSTM = 10240 # = 3 * 10240   30720
-    WIDTH = 640
-    HEIGHT = 192
-elif __dim_image == 3:
-    DIM_LSTM = 122880 # = 12 * 10240 || = 4 * 30720
-    WIDTH = 1280
-    HEIGHT = 384
-else:
-    raise ValueError
-#DIM_LSTM = 1024 * math.ceil(WIDTH/2**6) * math.ceil(HEIGHT/2**6)
-HIDDEN_SIZE_LSTM = 1000
-
-NUM_POSES = 6
-
-img_size = (WIDTH, HEIGHT) # (1280,384) # (640, 192) # (320, 96)
+from modules.preprocess.PreprocessModule import PreprocessEnum, PreprocessFactory
 
 
-# ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
-# [4541, 1101, 4661, 4071, 1591]
-trainingSeries = ["00", "01", "02", "08", "09"]
-testingSeries = ["03", "04", "05", "06", "07", "10"]
+# from params import ParamsInstance as params
+
+#from trainModel import trainEnum
+
+class trainEnum(Enum):
+    preprocessed = "preprocessed"
+    online = "online"
+
+    preprocessed_random = "preprocessed_random"
+    online_random = "online_random"
+
+    preprocessed_random_RDG = "preprocessed_random_RDG"
+    online_random_RDG = "online_random_RDG"
 
 
-if torch.cuda.is_available():
-    DEVICE = torch.device("cuda")
-else:
-    DEVICE = torch.device("cpu")
+class imageSizeEnum(Enum):
+    SMALL = "SMALL"
+    MEDIUM = "MEDIUM"
+    BIG = "BIG"
+
+class Params:
+    _instance = None
+
+    ModelEnum = ModelEnum
+    CriterionEnum = CriterionEnum
+    OptimizerEnum = OptimizerEnum
+
+    PreprocessEnum = PreprocessEnum
+
+    imageSizeEnum = imageSizeEnum
+
+    trainEnum = trainEnum
 
 
+    def __new__(cls, *args, **kwargs):
+        if Params._instance is None:
+            Params._instance = super(Params, cls).__new__(cls)
+        return Params._instance
 
-FLAG_LOAD = False #@param {type:"boolean"}
-FLAG_SAVE_LOG = True #@param {type:"boolean"}
-SAVE_STEP = 35 #@param {type:"number"}
-FLAG_SAVE = True #@param {type:"boolean"}
+    def __init__(self):
+        self.dir_main = '.'
+        self._dir_Dataset = 'dataset'
+        self._dir_Model = 'Model'
+        self._dir_History = 'History'
 
-BASE_EPOCH = 1 #@param {type:"number"} # 1 starting epoch
-NUM_EPOCHS = 200 - BASE_EPOCH #@param {type:"number"} # 10 how many epoch
+        self.set_dir_main(self.dir_main)
 
-fileNameFormat = "medium"
+        self.BACH_SIZE = 5
+        self.STEP = 5 #self.setPreprocesF(self.typePreprocess) ############
 
-prefixFileNameLoad = "DeepVO_epoch_"
-suffixFileNameLoad = "medium[11-18]" #@param {type:"string"}
+        self.HIDDEN_SIZE = 1000
+        self.NUM_POSES = 6
 
-prefixFileNameLosses = "loss_"
-suffixFileNameLosses = "{}[{}]"
+        self.BASE_EPOCH = 1
+        self.END_EPOCH = 200
+        self.NUM_EPOCHS = self.END_EPOCH - self.BASE_EPOCH
 
-prefixFileNameSave = "DeepVO_epoch_"
-suffixFileNameSave = "{}[{}-{}]"
+        self.setImageSize(imageSizeEnum.SMALL) # BIG
 
-type_train = "preprocessed"
+        self.setTypeModel(ModelEnum.DeepVONet_LSTM)
+        self.setTypeCriterion(CriterionEnum.MSELoss)
+        self.setTypeOptimizer(OptimizerEnum.Adam)
+
+        self.setPreprocesF(PreprocessEnum.RESIZED)
+
+        self.setTypeTrain(trainEnum.online_random_RDG)
 
 
+        # ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
+        self.trainingSeries = ["00", "01", "02", "08", "09"] # [4541, 1101, 4661, 4071, 1591]
+        self.testingSeries = ["03", "04", "05", "06", "07", "10"]
+
+
+        if torch.cuda.is_available():
+            self.DEVICE = torch.device("cuda")
+        else:
+            self.DEVICE = torch.device("cpu")
+
+
+        self.prefixFileNameLoad = "DeepVO_epoch_"
+
+        self.prefixFileNameLosses = "loss_"
+        self.suffixFileNameLosses = "{}[{}]"
+
+        self.prefixFileNameSave = "DeepVO_epoch_"
+        self.suffixFileNameSave = "{}[{}-{}]"
+        self.setSaveLoadModelParams("", False, "", True, True, 35)
+
+
+    def set_dir_main(self, dir_main):
+        self.dir_main = dir_main
+
+        self.dir_Dataset = os.path.join(self.dir_main, self._dir_Dataset)
+        self.path_sequences = os.path.join(self.dir_Dataset, 'sequences')
+        self.path_poses = os.path.join(self.dir_Dataset, 'poses')
+
+        self.dir_Model = os.path.join(self.dir_main, self._dir_Model)
+        self.dir_History = os.path.join(self.dir_main, self._dir_History)
+
+    def set_dir_Dataset(self, dir_Dataset):
+        self._dir_Dataset = dir_Dataset
+
+        self.dir_Dataset = os.path.join(self.dir_main, self._dir_Dataset)
+        self.path_sequences = os.path.join(dir_Dataset, 'sequences')
+        self.path_poses = os.path.join(self.dir_Dataset, 'poses')
+
+    def setTypeModel(self, typeModel: ModelEnum):
+        self.typeModel = typeModel
+
+        self.CHANNELS = ModelEnum.channelsRequired(self.typeModel)
+
+
+        if self.CHANNELS == 4:
+            self.DIM_RNN = 384 * math.ceil(self.WIDTH/2**6) * math.ceil(self.HEIGHT/2**6)
+        elif self.CHANNELS == 6:
+            self.DIM_RNN = 1024 * math.ceil(self.WIDTH/2**6) * math.ceil(self.HEIGHT/2**6)
+        elif self.CHANNELS == 8:
+            self.DIM_RNN = 1024 * math.ceil(self.WIDTH/2**6) * math.ceil(self.HEIGHT/2**6)
+        else:
+            raise ValueError
+
+        #self.setPreprocesF(self.typePreprocess) ############
+
+    def setTypeCriterion(self, typeCriterion: CriterionEnum):
+        self.typeCriterion = typeCriterion
+
+    def setTypeOptimizer(self, typeOptimizer: OptimizerEnum):
+        self.typeOptimizer = typeOptimizer
+
+    def setImageSize(self, typeImg: imageSizeEnum):
+        if typeImg == imageSizeEnum.SMALL:
+            self.WIDTH = 320
+            self.HEIGHT = 96
+        elif typeImg == imageSizeEnum.MEDIUM:
+            self.WIDTH = 640
+            self.HEIGHT = 192
+        elif typeImg == imageSizeEnum.BIG:
+            self.WIDTH = 1280
+            self.HEIGHT = 384
+        else:
+            raise ValueError
+
+        self.img_size = (self.WIDTH, self.HEIGHT)
+
+        #self.setPreprocesF(self.typePreprocess) ############
+
+    def setPreprocesF(self, typePreprocess: PreprocessEnum):
+        appPreprocesF = PreprocessFactory.build(typePreprocess, self.img_size, step=self.STEP)
+        if(appPreprocesF.ch*2 == self.CHANNELS):
+            self.typePreprocess = typePreprocess
+            self.preprocesF = appPreprocesF
+            self.suffixType = self.preprocesF.suffix()
+        else:
+            raise ValueError
+
+    def setBaseEpoch(self, base_epoch):
+        if(base_epoch < self.END_EPOCH):
+            self.BASE_EPOCH = base_epoch
+            self.NUM_EPOCHS = self.END_EPOCH - self.BASE_EPOCH
+        else:
+            raise ValueError
+
+    def setEndEpoch(self, end_epoch):
+        if(self.BASE_EPOCH < end_epoch):
+            self.END_EPOCH = end_epoch
+            self.NUM_EPOCHS = self.END_EPOCH - self.BASE_EPOCH
+        else:
+            raise ValueError
+
+    def setTypeTrain(self, typeTrain: trainEnum):
+        self.type_train = typeTrain
+
+    def setSaveLoadModelParams(self, fileNameFormat,  FLAG_LOAD, suffixFileNameLoad,
+                               FLAG_SAVE_LOG,  FLAG_SAVE, SAVE_STEP):
+        self.fileNameFormat = fileNameFormat
+
+        self.FLAG_LOAD = FLAG_LOAD
+        self.suffixFileNameLoad = suffixFileNameLoad # ex: "medium[11-18]"
+        self.FLAG_SAVE_LOG = FLAG_SAVE_LOG
+        self.FLAG_SAVE = FLAG_SAVE
+        self.SAVE_STEP = SAVE_STEP
+
+ParamsInstance = Params()
 

@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from loadData import DataGeneretor
 from buildModel import buildModel
 
-import params
+from params import ParamsInstance as params
+
 from modules.preprocess.EnumPreproc import EnumPreproc
 from modules.utility import PM, bcolors
 
@@ -105,7 +106,7 @@ prefixFileNameLoad = "DeepVO_epoch_"
 suffixFileNameLoad = "medium[1-105]" #@param {type:"string"}
 
 imageDir = "image_2"
-prepreocF = EnumPreproc.UNCHANGED((params.WIDTH, params.HEIGHT))
+prepreocF = EnumPreproc.RESIZED((params.WIDTH, params.HEIGHT))
 
 
 try:

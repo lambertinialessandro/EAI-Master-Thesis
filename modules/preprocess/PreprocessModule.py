@@ -10,17 +10,17 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 
-import params
 from modules.utility import PM
 
 
 class AbstractPreprocess(ABC):
     name = "Abstract"
 
-    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+    def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
         self.imgSize = imgSize
         self.imreadFlag = imreadFlag
         self.interpolation = interpolation
+        self.step = step
 
     @abstractmethod
     def processImage(self, imgPath):
@@ -34,7 +34,7 @@ class AbstractPreprocess(ABC):
         print(self.name)
 
     def suffix(self):
-        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_{params.STEP}_loaded.npy"
+        return f"_{self.name}_{self.imgSize[0]}_{self.imgSize[1]}_{self.step}_loaded.npy"
 
 
 
@@ -192,26 +192,26 @@ class PreprocessFactory():
 
     @staticmethod
     def build(type_p: PreprocessEnum,
-              imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
+              imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
         if type_p == PreprocessEnum.RESIZED:
             preprocess = ResizedPreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
         elif type_p == PreprocessEnum.SOBEL:
             preprocess = SobelPreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
         elif type_p == PreprocessEnum.CROPPING:
             preprocess = CroppingPreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
 
         elif type_p == PreprocessEnum.QUAT_PURE:
             preprocess = QuatPurePreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
         elif type_p == PreprocessEnum.QUAT_GRAY:
             preprocess = QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
         elif type_p == PreprocessEnum.QUAT_SOBEL:
             preprocess = QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag,
-                                             interpolation=interpolation)
+                                             interpolation=interpolation, step=step)
 
         else:
             raise ValueError
@@ -219,23 +219,23 @@ class PreprocessFactory():
         return preprocess
 
     @staticmethod
-    def listPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
-        return [ResizedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                SobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                CroppingPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+    def listPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
+        return [ResizedPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
+                SobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
+                CroppingPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
                 ]
 
     @staticmethod
-    def listQuatPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
-        return [QuatPurePreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
+    def listQuatPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
+        return [QuatPurePreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
+                QuatGrayPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
+                QuadSobelPreprocess(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
                 ]
 
     @staticmethod
-    def listAllPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA):
-        return [*PreprocessFactory.listPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation),
-                *PreprocessFactory.listQuatPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation)]
+    def listAllPreproc(imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
+        return [*PreprocessFactory.listPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step),
+                *PreprocessFactory.listQuatPreproc(imgSize, imreadFlag=imreadFlag, interpolation=interpolation, step=step)]
 
 
 def main():

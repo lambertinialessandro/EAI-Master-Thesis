@@ -136,7 +136,7 @@ def analizeHistory(dir_History):
 
 
 if __name__ == "__main__":
-    import params
+    from params import ParamsInstance as params
     PM.setFlags(True, True, False)
 
     dir_History = params.dir_History

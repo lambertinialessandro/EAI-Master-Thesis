@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from loadData import DataGeneretorPreprocessed, DataGeneretorOnline, RandomDataGeneretor
 
-import params
+from params import ParamsInstance as params
 from modules.utility import PM, bcolors, checkExistDirs
 
 
@@ -651,15 +651,7 @@ def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
     return loss_test, test_elapsedT
 
 
-class enumTrain(Enum):
-    preprocessed = "preprocessed"
-    online = "online"
 
-    preprocessed_random = "preprocessed_random"
-    online_random = "online_random"
-
-    preprocessed_random_RDG = "preprocessed_random_RDG"
-    online_random_RDG = "online_random_RDG"
 
 
 def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
@@ -687,27 +679,27 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
         # Train the model
-        if type_train == enumTrain.preprocessed:
+        if type_train == trainEnum.preprocessed:
             loss_train, train_elapsedT = trainEP(model, criterion, optimizer,
                                                     imageDir, prepreocF,
                                                     sequences=sequences_train)
-        elif type_train == enumTrain.online:
+        elif type_train == trainEnum.online:
             loss_train, train_elapsedT = trainEO(model, criterion, optimizer,
                                                     imageDir, prepreocF,
                                                     sequences=sequences_train)
-        elif type_train == enumTrain.preprocessed_random:
+        elif type_train == trainEnum.preprocessed_random:
             loss_train, train_elapsedT = trainEPR(model, criterion, optimizer,
                                                     imageDir, prepreocF,
                                                     sequences=sequences_train)
-        elif type_train == enumTrain.online_random:
+        elif type_train == trainEnum.online_random:
             loss_train, train_elapsedT = trainEOR(model, criterion, optimizer,
                                                     imageDir, prepreocF,
                                                     sequences=sequences_train)
-        elif type_train == enumTrain.preprocessed_random_RDG:
+        elif type_train == trainEnum.preprocessed_random_RDG:
             loss_train, train_elapsedT = trainEPR_RDG(model, criterion, optimizer,
                                                         imageDir, prepreocF,
                                                         sequences=sequences_train)
-        elif type_train == enumTrain.online_random_RDG:
+        elif type_train == trainEnum.online_random_RDG:
             loss_train, train_elapsedT = trainEOR_RDG(model, criterion, optimizer,
                                                         imageDir, prepreocF,
                                                         sequences=sequences_train)
@@ -749,16 +741,16 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
 
 
         # Test the model
-        if type_train == enumTrain.preprocessed or \
-                type_train == enumTrain.preprocessed_random or \
-                type_train == enumTrain.preprocessed_random_RDG:
+        if type_train == trainEnum.preprocessed or \
+                type_train == trainEnum.preprocessed_random or \
+                type_train == trainEnum.preprocessed_random_RDG:
             loss_test, test_elapsedT = testEP(model, criterion, optimizer,
                                                              imageDir, prepreocF,
                                                              sequences=sequences_test,
                                                              plot=plot_test)
-        elif type_train == enumTrain.online or \
-                type_train == enumTrain.online_random or \
-                type_train == enumTrain.online_random_RDG:
+        elif type_train == trainEnum.online or \
+                type_train == trainEnum.online_random or \
+                type_train == trainEnum.online_random_RDG:
             loss_test, test_elapsedT = testEO(model, criterion, optimizer,
                                                  imageDir, prepreocF,
                                                  sequences=sequences_test,
@@ -814,6 +806,16 @@ def trainModel(model, criterion, optimizer, imageDir, prepreocF, type_train,\
         plt.show()
 
 
+class trainEnum(Enum):
+    preprocessed = "preprocessed"
+    online = "online"
+
+    preprocessed_random = "preprocessed_random"
+    online_random = "online_random"
+
+    preprocessed_random_RDG = "preprocessed_random_RDG"
+    online_random_RDG = "online_random_RDG"
+
 
 if __name__ == "__main__":
     import math
@@ -823,7 +825,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training DeepVO')
 
-    parser.add_argument('--type', default='2', type=int, help=' int [1-6]')
+    parser.add_argument('--type', default='7', type=int, help=' int [1-6]')
     parser.add_argument('--size', default='1', type=int, help=' int [1-3]: small/medium/big')
     parser.add_argument('--name', default='', type=str, help=' str: name network')
     parser.add_argument('--path', default='./', type=str, help=' str : Dataset path')
@@ -869,13 +871,13 @@ if __name__ == "__main__":
         raise ValueError
 
     if online == 3:
-        type_train = enumTrain.online_random
+        type_train = trainEnum.online_random
     elif online == 2:
-        type_train = enumTrain.preprocessed_random
+        type_train = trainEnum.preprocessed_random
     elif online == 1:
-        type_train = enumTrain.online_random_RDG
+        type_train = trainEnum.online_random_RDG
     elif online == 0:
-        type_train = enumTrain.preprocessed_random_RDG
+        type_train = trainEnum.preprocessed_random_RDG
     else:
         raise ValueError
 
@@ -895,46 +897,53 @@ if __name__ == "__main__":
 
 
     if type_net == 1:
-        typeModel = NetworkFactory.ModelEnum.SmallDeepVONet
+        typeModel = NetworkFactory.ModelEnum.SmallDeepVONet_LSTM
         params.CHANNELS = 2
         params.suffixType = "SOBEL"
         params.DIM_LSTM = 384 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.SOBEL,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 2:
-        typeModel = NetworkFactory.ModelEnum.DeepVONet
+        typeModel = NetworkFactory.ModelEnum.DeepVONet_LSTM
         params.CHANNELS = 6
         params.suffixType = "RESIZED"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 3:
-        typeModel = NetworkFactory.ModelEnum.QuaternionSmallDeepVONet
+        typeModel = NetworkFactory.ModelEnum.QuaternionSmallDeepVONet_LSTM
         params.CHANNELS = 8
         params.suffixType = "QUAT_SOBEL"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_SOBEL,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 4:
-        typeModel = NetworkFactory.ModelEnum.DSC_VONet
+        typeModel = NetworkFactory.ModelEnum.DSC_VONet_LSTM
         params.CHANNELS = 6
         params.suffixType = "RESIZED"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 5:
-        typeModel = NetworkFactory.ModelEnum.QuaternionDeepVONet
+        typeModel = NetworkFactory.ModelEnum.QuaternionDeepVONet_LSTM
         params.CHANNELS = 8
         params.suffixType = "QUAT_PURE"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_PURE,
                                             (params.WIDTH, params.HEIGHT))
     elif type_net == 6:
-        typeModel = NetworkFactory.ModelEnum.QuaternionDSC_VONet
+        typeModel = NetworkFactory.ModelEnum.QuaternionDSC_VONet_LSTM
         params.CHANNELS = 8
         params.suffixType = "QUAT_PURE"
         params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
         prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.QUAT_PURE,
+                                            (params.WIDTH, params.HEIGHT))
+    elif type_net == 7:
+        typeModel = NetworkFactory.ModelEnum.DeepVONet_GRU
+        params.CHANNELS = 6
+        params.suffixType = "RESIZED"
+        params.DIM_LSTM = 1024 * math.ceil(params.WIDTH/2**6) * math.ceil(params.HEIGHT/2**6)
+        prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED,
                                             (params.WIDTH, params.HEIGHT))
     else:
         raise ValueError

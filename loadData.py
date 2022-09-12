@@ -6,7 +6,8 @@ import os
 import numpy as np
 import torch
 
-import params
+from params import ParamsInstance as params
+
 from modules.preprocess.PreprocessModule import PreprocessFactory
 from modules.utility import PM, bcolors, poseFile2poseRobot
 
@@ -320,7 +321,6 @@ class RandomDataGeneretor():
 
 
 if __name__ == "__main__":
-    import params
     PM.setFlags(True, True, False)
 
 

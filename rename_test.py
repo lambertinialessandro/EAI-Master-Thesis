@@ -2,7 +2,7 @@
 import os
 import re
 
-import params
+from params import ParamsInstance as params
 
 
 history_dir = params.dir_History
@@ -21,29 +21,31 @@ print("\t-1: Exit")
 select = int(input("Select directory: "))
 
 if select <= -1 or select >= len(corrects_dirs):
-    exit(0)
+    print("Exit!")
 
-new_name = input("Insert new name: ")
-confirmation = input(f"Confirm name \"{new_name}\" [y/n]: ")
+else:
 
-if confirmation == "y":
-    print(f"Changing name from {corrects_dirs[select]} to {new_name}")
+    new_name = input("Insert new name: ")
+    confirmation = input(f"Confirm name \"{new_name}\" [y/n]: ")
 
-    # print(os.listdir(os.path.join(history_dir, corrects_dirs[select])))
-    for name_file in os.listdir(os.path.join(history_dir, corrects_dirs[select])):
-        name_splitted = name_file.split("[")
-        os.rename(os.path.join(history_dir, corrects_dirs[select], name_file),
-                  os.path.join(history_dir, corrects_dirs[select], f"loss_{new_name}_[{name_splitted[1]}") )
-        print(f"from {name_file} to loss_{new_name}_[{name_splitted[1]}")
-    os.rename(os.path.join(history_dir, corrects_dirs[select]), os.path.join(history_dir, new_name))
-    print(f"renamed directory from {corrects_dirs[select]} to new_name")
+    if confirmation == "y":
+        print(f"Changing name from {corrects_dirs[select]} to {new_name}")
 
-    # print(os.listdir(os.path.join(model_dir, corrects_dirs[select])))
-    for name_file in os.listdir(os.path.join(model_dir, corrects_dirs[select])):
-        name_splitted = name_file.split("[")
-        os.rename(os.path.join(model_dir, corrects_dirs[select], name_file),
-                  os.path.join(model_dir, corrects_dirs[select], f"DeepVO_epoch_{new_name}_[{name_splitted[1]}") )
-        print(f"from {name_file} to DeepVO_epoch_{new_name}_[{name_splitted[1]}")
-    os.rename(os.path.join(model_dir, corrects_dirs[select]), os.path.join(model_dir, new_name))
-    print(f"renamed directory from {corrects_dirs[select]} to new_name")
+        # print(os.listdir(os.path.join(history_dir, corrects_dirs[select])))
+        for name_file in os.listdir(os.path.join(history_dir, corrects_dirs[select])):
+            name_splitted = name_file.split("[")
+            os.rename(os.path.join(history_dir, corrects_dirs[select], name_file),
+                      os.path.join(history_dir, corrects_dirs[select], f"loss_{new_name}_[{name_splitted[1]}") )
+            print(f"from {name_file} to loss_{new_name}_[{name_splitted[1]}")
+        os.rename(os.path.join(history_dir, corrects_dirs[select]), os.path.join(history_dir, new_name))
+        print(f"renamed directory from {corrects_dirs[select]} to new_name")
+
+        # print(os.listdir(os.path.join(model_dir, corrects_dirs[select])))
+        for name_file in os.listdir(os.path.join(model_dir, corrects_dirs[select])):
+            name_splitted = name_file.split("[")
+            os.rename(os.path.join(model_dir, corrects_dirs[select], name_file),
+                      os.path.join(model_dir, corrects_dirs[select], f"DeepVO_epoch_{new_name}_[{name_splitted[1]}") )
+            print(f"from {name_file} to DeepVO_epoch_{new_name}_[{name_splitted[1]}")
+        os.rename(os.path.join(model_dir, corrects_dirs[select]), os.path.join(model_dir, new_name))
+        print(f"renamed directory from {corrects_dirs[select]} to new_name")
 
