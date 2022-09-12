@@ -584,30 +584,30 @@ def testEO(model, criterion, optimizer, imageDir, prepreocF, sequences=params.te
         pts_out = np.array([[0, 0, 0, 0, 0, 0]])
 
         for inputs, labels, pos, nb in dg:
-            for i in range(nb):
+            h = model.init_hidden(2, params.DEVICE)
 
-                outputs = model(inputs[i])
-                if params.DEVICE.type == 'cuda':
-                    det_outputs = outputs.cpu().detach().numpy()
-                    det_labels = labels[i].cpu().detach().numpy()
-                else:
-                    det_outputs = outputs.detach().numpy()
-                    det_labels = labels[i].detach().numpy()
+            outputs, h = model(inputs, h)
+            if params.DEVICE.type == 'cuda':
+                det_outputs = outputs.cpu().detach().numpy()
+                det_labels = labels.cpu().detach().numpy()
+            else:
+                det_outputs = outputs.detach().numpy()
+                det_labels = labels.detach().numpy()
 
-                totLoss = criterion(outputs, labels[i]).item()
-                poseLoss = criterion(outputs[:, 0:3], labels[i][:, 0:3]).item()
-                rotLoss = criterion(outputs[:, 3:6], labels[i][:, 3:6]).item()
+            totLoss = criterion(outputs, labels).item()
+            poseLoss = criterion(outputs[:, 0:3], labels[:, 0:3]).item()
+            rotLoss = criterion(outputs[:, 3:6], labels[:, 3:6]).item()
 
-                loss_test[sequence]["tot"].append(totLoss)
-                loss_test[sequence]["pose"].append(poseLoss)
-                loss_test[sequence]["rot"].append(rotLoss)
+            loss_test[sequence]["tot"].append(totLoss)
+            loss_test[sequence]["pose"].append(poseLoss)
+            loss_test[sequence]["rot"].append(rotLoss)
 
-                if plot:
-                    for j in range(params.BACH_SIZE):
-                        pts_yTest = np.append(pts_yTest, [pts_yTest[-1] + det_labels[j]], axis=0)
+            if plot:
+                for j in range(params.BACH_SIZE):
+                    pts_yTest = np.append(pts_yTest, [pts_yTest[-1] + det_labels[j]], axis=0)
 
-                        if j % params.STEP == 0:
-                            pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
+                    if j % params.STEP == 0:
+                        pts_out = np.append(pts_out, [pts_out[-1] + det_outputs[j]], axis=0)
             del inputs, labels, det_outputs, det_labels, totLoss, poseLoss, rotLoss
             gc.collect()
             torch.cuda.empty_cache()
