@@ -423,7 +423,7 @@ def trainEOR_RDG(model, criterion, optimizer, imageDir, prepreocF, sequences=par
 
     for inputs, labels, pos, seq, nb in rdg:
         torch.cuda.empty_cache()
-        h = tuple([e.data for e in h])
+
         model.zero_grad()
 
         outputs, h = model(inputs, h)

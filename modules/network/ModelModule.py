@@ -1,7 +1,7 @@
 
 from enum import Enum
 
-from modules.network.models.DeepVONet import DeepVONet, DeepVONet_FSM
+from modules.network.models.DeepVONet import DeepVONet_LSTM, DeepVONet_GRU, DeepVONet_FSM
 from modules.network.models.SmallDeepVONet import SmallDeepVONet
 from modules.network.models.QuaternionSmallDeepVONet import QuaternionSmallDeepVONet
 from modules.network.models.QuaternionDeepVONet import QuaternionDeepVONet, QuaternionDeepVONet_FSM
@@ -12,17 +12,16 @@ from modules.utility import PM, bcolors
 
 
 class ModelEnum(Enum):
-    DeepVONet = "DeepVONet"
-    QuaternionDeepVONet = "QuaternionDeepVONet"
-
-    SmallDeepVONet = "SmallDeepVONet"
-    QuaternionSmallDeepVONet = "QuaternionSmallDeepVONet"
-
+    DeepVONet_LSTM = "DeepVONet_LSTM"
+    DeepVONet_GRU = "DeepVONet_GRU"
+    SmallDeepVONet_LSTM = "SmallDeepVONet_LSTM"
     DeepVONet_FSM = "DeepVONet_FSM"
-    QuaternionDeepVONet_FSM = "QuaternionDeepVONet_FSM"
+    DSC_VONet_LSTM = "DSC_VONet_LSTM"
 
-    DSC_VONet = "DSC_VONet"
-    QuaternionDSC_VONet = "QuaternionDSC_VONet"
+    QuaternionDeepVONet_LSTM = "QuaternionDeepVONet_LSTM"
+    QuaternionSmallDeepVONet_LSTM = "QuaternionSmallDeepVONet_LSTM"
+    QuaternionDeepVONet_FSM = "QuaternionDeepVONet_FSM"
+    QuaternionDSC_VONet_LSTM = "QuaternionDSC_VONet_LSTM"
 
 
 class ModelFactory():
@@ -30,26 +29,26 @@ class ModelFactory():
         pass
 
     @staticmethod
-    def build(typeModel: ModelEnum, input_size_LSTM, hidden_size_LSTM, device):
-        if typeModel == ModelEnum.DeepVONet:
-            model = DeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
-        elif typeModel == ModelEnum.QuaternionDeepVONet:
-            model = QuaternionDeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
-
-        elif typeModel == ModelEnum.SmallDeepVONet:
-            model = SmallDeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
-        elif typeModel == ModelEnum.QuaternionSmallDeepVONet:
-            model = QuaternionSmallDeepVONet(input_size_LSTM, hidden_size_LSTM).to(device)
-
+    def build(typeModel: ModelEnum, input_size, hidden_size, device):
+        if typeModel == ModelEnum.DeepVONet_LSTM:
+            model = DeepVONet_LSTM(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.DeepVONet_GRU:
+            model = DeepVONet_GRU(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.SmallDeepVONet_LSTM:
+            model = SmallDeepVONet(input_size, hidden_size).to(device)
         elif typeModel == ModelEnum.DeepVONet_FSM:
-            model = DeepVONet_FSM(input_size_LSTM, hidden_size_LSTM).to(device)
-        elif typeModel == ModelEnum.QuaternionDeepVONet_FSM:
-            model = QuaternionDeepVONet_FSM(input_size_LSTM, hidden_size_LSTM).to(device)
+            model = DeepVONet_FSM(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.DSC_VONet_LSTM:
+            model = DSC_VONet(input_size, hidden_size).to(device)
 
-        elif typeModel == ModelEnum.DSC_VONet:
-            model = DSC_VONet(input_size_LSTM, hidden_size_LSTM).to(device)
-        elif typeModel == ModelEnum.QuaternionDSC_VONet:
-            model = QuaternionDSC_VONet(input_size_LSTM, hidden_size_LSTM).to(device)
+        elif typeModel == ModelEnum.QuaternionDeepVONet_LSTM:
+            model = QuaternionDeepVONet(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.QuaternionSmallDeepVONet_LSTM:
+            model = QuaternionSmallDeepVONet(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.QuaternionDeepVONet_FSM:
+            model = QuaternionDeepVONet_FSM(input_size, hidden_size).to(device)
+        elif typeModel == ModelEnum.QuaternionDSC_VONet_LSTM:
+            model = QuaternionDSC_VONet(input_size, hidden_size).to(device)
 
         else:
             PM.printI(bcolors.LIGHTRED+"ERROR {}".format(typeModel)+bcolors.ENDC+"\n")
