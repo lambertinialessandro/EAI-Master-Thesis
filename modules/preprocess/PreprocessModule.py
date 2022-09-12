@@ -12,9 +12,19 @@ from abc import ABC, abstractmethod
 
 from modules.utility import PM
 
+class PreprocessEnum(Enum):
+    RESIZED = "RESIZED"
+    SOBEL = "SOBEL"
+    CROPPING = "CROPPING"
+
+    QUAT_PURE = "QUAT_PURE"
+    QUAT_GRAY = "QUAT_GRAY"
+    QUAT_SOBEL = "QUAT_SOBEL"
+
 
 class AbstractPreprocess(ABC):
     name = "Abstract"
+    ch = 0
 
     def __init__(self, imgSize, imreadFlag=cv2.IMREAD_UNCHANGED, interpolation=cv2.INTER_AREA, step=1):
         self.imgSize = imgSize
@@ -39,7 +49,8 @@ class AbstractPreprocess(ABC):
 
 
 class ResizedPreprocess(AbstractPreprocess):
-    name = "RESIZED"
+    name = PreprocessEnum.RESIZED.value
+    ch = 3
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -55,7 +66,8 @@ class ResizedPreprocess(AbstractPreprocess):
 
 
 class SobelPreprocess(AbstractPreprocess):
-    name = "SOBEL"
+    name = PreprocessEnum.SOBEL.value
+    ch = 2
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -86,7 +98,8 @@ class SobelPreprocess(AbstractPreprocess):
 
 
 class CroppingPreprocess(AbstractPreprocess):
-    name = "CROPPING"
+    name = PreprocessEnum.CROPPING.value
+    ch = 3
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -115,7 +128,8 @@ class CroppingPreprocess(AbstractPreprocess):
 
 
 class QuatPurePreprocess(AbstractPreprocess):
-    name = "QUAT_PURE"
+    name = PreprocessEnum.QUAT_PURE.value
+    ch = 4
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -136,7 +150,8 @@ class QuatPurePreprocess(AbstractPreprocess):
 
 
 class QuatGrayPreprocess(AbstractPreprocess):
-    name = "QUAT_GRAY"
+    name = PreprocessEnum.QUAT_GRAY.value
+    ch = 4
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -157,7 +172,8 @@ class QuatGrayPreprocess(AbstractPreprocess):
 
 
 class QuadSobelPreprocess(AbstractPreprocess):
-    name = "QUAT_SOBEL"
+    name = PreprocessEnum.QUAT_SOBEL.value
+    ch = 4
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -175,16 +191,6 @@ class QuadSobelPreprocess(AbstractPreprocess):
         quatImg = np.concatenate((imGray, imRGB), 2)
         quatImg = cv2.resize(quatImg, self.imgSize, interpolation = self.interpolation)
         return quatImg / 255.0
-
-
-class PreprocessEnum(Enum):
-    RESIZED = "RESIZED"
-    SOBEL = "SOBEL"
-    CROPPING = "CROPPING"
-
-    QUAT_PURE = "QUAT_PURE"
-    QUAT_GRAY = "QUAT_GRAY"
-    QUAT_SOBEL = "QUAT_SOBEL"
 
 
 class PreprocessFactory():

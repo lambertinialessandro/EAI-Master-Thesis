@@ -11,6 +11,7 @@ class NetworkFactory():
     CriterionEnum = CriterionEnum
     OptimizerEnum = OptimizerEnum
 
+    @staticmethod
     def build(typeModel: ModelEnum, input_size_LSTM, hidden_size_LSTM, device,
               typeCriterion: CriterionEnum,
               typeOptimizer: OptimizerEnum):

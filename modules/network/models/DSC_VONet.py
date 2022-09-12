@@ -24,9 +24,9 @@ class DSC_Block(nn.Module):
         return x
 
 
-class DSC_VONet(nn.Module):
+class DSC_VONet_LSTM(nn.Module):
     def __init__(self, input_size_LSTM, hidden_size_LSTM):
-        super(DSC_VONet, self).__init__()
+        super(DSC_VONet_LSTM, self).__init__()
 
         self.block1 = DSC_Block(6, 64, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
@@ -74,24 +74,29 @@ class DSC_VONet(nn.Module):
         x = self.linear_output(x)
         return x
 
+    def init_hidden(self, batch_size, device):
+        weight = next(self.parameters()).data
+        hidden = weight.new(2, batch_size, self.hidden_size_LSTM).zero_().to(device)
+        return hidden
+
 
 if __name__ == "__main__":
     import torch
 
     x = torch.rand(5, 10, 50, 50)
 
-    C_B = C_Block(10, 32, kernel_size=3, stride=1, padding=0, dropout_rate=0.5)
-    params_c = sum(p.numel() for p in C_B.parameters() if p.requires_grad)
-    out_c = C_B(x)
+    #C_B = C_Block(10, 32, kernel_size=3, stride=1, padding=0, dropout_rate=0.5)
+    #params_c = sum(p.numel() for p in C_B.parameters() if p.requires_grad)
+    #out_c = C_B(x)
 
     DSC_B = DSC_Block(10, 32, kernel_size=3, stride=1, padding=0, dropout_rate=0.5)
     params_dsc = sum(p.numel() for p in DSC_B.parameters() if p.requires_grad)
     out_dsc = DSC_B(x)
 
-    print(f"The standard convolution uses {params_c} parameters.")
+    #print(f"The standard convolution uses {params_c} parameters.")
     print(f"The depthwise separable convolution uses {params_dsc} parameters.")
 
-    print(out_c.shape)
+    #print(out_c.shape)
     print(out_dsc.shape)
 
 

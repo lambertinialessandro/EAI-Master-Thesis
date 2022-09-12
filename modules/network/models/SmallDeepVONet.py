@@ -20,9 +20,9 @@ class C_Block(nn.Module):
         return x
 
 
-class SmallDeepVONet(nn.Module):
+class SmallDeepVONet_LSTM(nn.Module):
     def __init__(self, input_size_LSTM, hidden_size_LSTM):
-        super(SmallDeepVONet, self).__init__()
+        super(SmallDeepVONet_LSTM, self).__init__()
 
         self.block1 = C_Block(2, 24, kernel_size=(7, 7), stride=(2, 2),
                               padding=(3, 3), dropout_rate=0.2)
@@ -60,5 +60,10 @@ class SmallDeepVONet(nn.Module):
 
         x = self.linear_output(x)
         return x
+
+    def init_hidden(self, batch_size, device):
+        weight = next(self.parameters()).data
+        hidden = weight.new(2, batch_size, self.hidden_size_LSTM).zero_().to(device)
+        return hidden
 
 

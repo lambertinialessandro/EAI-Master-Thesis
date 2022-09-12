@@ -327,7 +327,7 @@ if __name__ == "__main__":
     sequence = "02"
     imageDir = "image_2"
     imgSize = (params.WIDTH, params.HEIGHT)
-    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED, imgSize)
+    prepreocF = PreprocessFactory.build(PreprocessFactory.PreprocessEnum.RESIZED, imgSize, step=params.STEP)
 
 
     dgo = DataGeneretorOnline(prepreocF, sequence, imageDir, attach=False)

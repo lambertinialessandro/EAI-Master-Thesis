@@ -69,6 +69,9 @@ class DeepVONet_LSTM(nn.Module):
         x = self.block6(x)
 
         x = self.flatten(x)
+
+        print("x: ", x.size())
+        print("h: ", [h[i].size() for i in range(len(h))])
         x, h = self.lstm(x, h)
 
         x = self.lstm_dropout(x)
@@ -77,9 +80,9 @@ class DeepVONet_LSTM(nn.Module):
         return x, h
 
     def init_hidden(self, batch_size, device):
-        weight = next(self.parameters()).data
-        hidden = weight.new(2, batch_size, self.hidden_size_LSTM).zero_().to(device)
-        return hidden
+        w = next(self.parameters()).data
+        h = w.new(2, batch_size, self.hidden_size_GRU).zero_().to(device)
+        return h
 
 
 class DeepVONet_GRU(nn.Module):
@@ -118,6 +121,7 @@ class DeepVONet_GRU(nn.Module):
 
     def forward(self, x, h):
         h = h.data
+        #h = tuple([elem.data for elem in h])
 
         x = self.block1(x)
         x = self.block2(x)
@@ -130,7 +134,10 @@ class DeepVONet_GRU(nn.Module):
         x = self.block6(x)
 
         x = self.flatten(x)
-        x, h = self.gru(x, h)
+
+        print("x: ", x.size())
+        print("h: ", [h[i].size() for i in range(len(h))])
+        x, h = self.gru(x, h[0])
 
         x = self.lstm_dropout(x)
         x = self.linear_output(x)
@@ -138,9 +145,9 @@ class DeepVONet_GRU(nn.Module):
         return x, h
 
     def init_hidden(self, batch_size, device):
-        weight = next(self.parameters()).data
-        hidden = weight.new(2, batch_size, self.hidden_size_GRU).zero_().to(device)
-        return hidden
+        w = next(self.parameters()).data
+        h = w.new(1, batch_size, self.hidden_size_GRU).zero_().to(device)
+        return h
 
 
 class DeepVONet_FSM(nn.Module):
