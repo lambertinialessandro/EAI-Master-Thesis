@@ -25,7 +25,7 @@ Final project for the course of Elective in Artificial Intelligence 2021/2022.
 
 ## 💯 Final score:
 
-Score: `--/30`
+Score: `30L/30`
 
 ## 🙋 Info
 
